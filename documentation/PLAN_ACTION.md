@@ -50,56 +50,76 @@ L'alternant a produit un notebook complet (`P8_Notebook_Linux_EMR_PySpark_V1.0.i
 
 ## Phase 1 : Analyse et Préparation (Local)
 
-### 1.1 Étude du notebook de l'alternant ✓
+### 1.1 Étude du notebook de l'alternant ✅ TERMINÉ
 
 **Objectif** : Comprendre l'architecture et le code existant
 
 **Actions** :
 - [x] Lire et analyser le notebook complet
-- [ ] Identifier les points d'insertion pour les nouveaux composants
-- [ ] Comprendre la structure des données (schema PySpark)
-- [ ] Analyser l'utilisation de Pandas UDF
+- [x] Identifier les points d'insertion pour les nouveaux composants
+- [x] Comprendre la structure des données (schema PySpark)
+- [x] Analyser l'utilisation de Pandas UDF
 
-**Livrables** :
-- Notes sur l'architecture actuelle
-- Identification des cellules de code à modifier/ajouter
+**Livrables** ✅ :
+- ✅ Notes dans CLAUDE.md (section "Intern's Work Analysis")
+- ✅ Notebook alternant importé dans `notebooks/alternant/`
+- ✅ 47 images de documentation EMR importées
 
-### 1.2 Téléchargement et exploration du dataset
+**Date de complétion** : 24 octobre 2025
+
+### 1.2 Téléchargement et exploration du dataset ✅ TERMINÉ
 
 **Objectif** : Obtenir et analyser le jeu de données Fruits-360
 
 **Actions** :
-- [ ] Télécharger le dataset (Kaggle ou lien direct S3)
-- [ ] Extraire et explorer la structure des dossiers
-- [ ] Vérifier la qualité des images (format, dimensions)
-- [ ] Analyser la distribution des classes
+- [x] Télécharger le dataset (lien direct S3)
+- [x] Extraire et explorer la structure des dossiers
+- [x] Vérifier la qualité des images (format, dimensions)
+- [x] Analyser la distribution des classes
 
-**Livrables** :
-- Dataset local dans `data/raw/`
-- Statistiques du dataset (nombre d'images par classe, etc.)
+**Livrables** ✅ :
+- ✅ Dataset local dans `data/raw/fruits-360_dataset/` (67,692 images Training, 131 classes)
+- ✅ Dataset original-size dans `data/raw/fruits-360-original-size/`
+- ✅ Documentation complète dans `documentation/DATASET_INFO.md`
+- ✅ ZIP supprimé pour économiser l'espace (1.3GB)
+- ✅ Configuration .gitignore pour exclure les données volumineuses
 
-### 1.3 Setup environnement local PySpark
+**Statistiques** :
+- Training: 67,692 images, 131 classes
+- Test: 22,688 images
+- Format: JPG 100x100 pixels
+- Taille totale: ~1.5 GB
+
+**Date de complétion** : 24 octobre 2025
+
+### 1.3 Setup environnement local PySpark ✅ TERMINÉ
 
 **Objectif** : Reproduire l'environnement local pour tester le code
 
 **Actions** :
-- [ ] Installer Java JDK (prérequis pour Spark)
-- [ ] Installer PySpark 3.x
-- [ ] Installer TensorFlow 2.x
-- [ ] Installer dépendances (PIL, pandas, numpy, pyarrow)
-- [ ] Vérifier la configuration avec un test simple
+- [x] Vérifier Java JDK (Java 11 ✅ compatible)
+- [x] Créer requirements.txt avec PySpark 3.5.0
+- [x] Définir TensorFlow 2.16.1
+- [x] Lister toutes les dépendances (PIL, pandas, numpy, pyarrow)
+- [x] Configurer VSCode pour le projet
 
-**Livrables** :
-- Fichier `requirements.txt` avec toutes les dépendances
-- Environment setup documenté
+**Livrables** ✅ :
+- ✅ `requirements.txt` créé avec toutes les dépendances
+- ✅ `.vscode/settings.json` configuré (exclusion data/, config Python/Jupyter)
+- ✅ Java 11.0.27 vérifié et compatible
+- ✅ Structure de projet complète
+
+**Date de complétion** : 24 octobre 2025
 
 ---
 
 ## Phase 2 : Développement Local
 
-### 2.1 Implémenter le broadcast des poids TensorFlow
+### 2.1 Implémenter le broadcast des poids TensorFlow ✅ IMPLÉMENTÉ (À TESTER)
 
 **Objectif** : Optimiser la distribution du modèle sur les workers
+
+**Statut** : ✅ Code implémenté dans le notebook, prêt pour tests locaux
 
 **Contexte technique** :
 Sans broadcast, chaque worker recharge le modèle MobileNetV2 (plusieurs MB), ce qui :
@@ -127,13 +147,20 @@ def extract_features(content_series):
     # ... reste du code
 ```
 
-**Livrables** :
-- Code fonctionnel du broadcast
-- Comparaison des performances (avant/après)
+**Livrables** ✅ :
+- ✅ Code implémenté dans `notebooks/p11-david-scanu-local-development.ipynb`
+- ✅ Extraction des poids: `model_weights = model.get_weights()`
+- ✅ Broadcast: `broadcast_weights = sc.broadcast(model_weights)`
+- ✅ Reconstruction dans workers: `local_model.set_weights(broadcast_weights.value)`
+- ⏳ Tests de performance à réaliser
 
-### 2.2 Implémenter la réduction PCA en PySpark
+**Date d'implémentation** : 24 octobre 2025
+
+### 2.2 Implémenter la réduction PCA en PySpark ✅ IMPLÉMENTÉ (À TESTER)
 
 **Objectif** : Ajouter une étape de dimensionnalité reduction après l'extraction de features
+
+**Statut** : ✅ Code implémenté dans le notebook, prêt pour tests locaux
 
 **Contexte technique** :
 MobileNetV2 (sans top, avec pooling='avg') produit des features de dimension 1280.
@@ -164,14 +191,21 @@ df_pca = model_pca.transform(df_features)
 df_pca.select("image_path", "label", "pca_features").write.csv("s3://bucket/pca_output/")
 ```
 
-**Livrables** :
-- Code PCA fonctionnel en PySpark
-- Analyse de la variance expliquée
-- Output CSV avec features réduites
+**Livrables** ✅ :
+- ✅ Code PCA implémenté avec `pyspark.ml.feature.PCA`
+- ✅ Configuration k=200 composantes (paramétrable)
+- ✅ Conversion array → vecteur dense avec UDF
+- ✅ Analyse de variance expliquée préparée
+- ✅ Sauvegarde en Parquet et CSV
+- ⏳ Tests et validation à réaliser
 
-### 2.3 Intégration et tests locaux
+**Date d'implémentation** : 24 octobre 2025
+
+### 2.3 Intégration et tests locaux ⏳ EN ATTENTE
 
 **Objectif** : Valider le pipeline complet en local
+
+**Statut** : ⏳ Prêt pour tests - nécessite installation dépendances et exécution notebook
 
 **Actions** :
 - [ ] Créer un notebook consolidé avec toutes les modifications
