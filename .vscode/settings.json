@@ -1,0 +1,21 @@
+{
+  // Exclure le dossier data/raw du file watching pour éviter les performances issues
+  "files.watcherExclude": {
+    "**/data/raw/**": true,
+    "**/data/features/**": true,
+    "**/data/pca/**": true
+  },
+
+  // Exclure aussi de la recherche
+  "search.exclude": {
+    "**/data/raw/**": true,
+    "**/data/features/**": true,
+    "**/data/pca/**": true
+  },
+
+  // Configuration Python pour le projet
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+
+  // Configuration Jupyter
+  "jupyter.notebookFileRoot": "${workspaceFolder}"
+}
