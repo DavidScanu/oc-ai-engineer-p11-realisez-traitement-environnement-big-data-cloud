@@ -92,7 +92,7 @@ Votre retour critique de cette solution sera précieux avant de décider de la g
 
 ## 📦 Livrables
 
-1. **Un notebook sur le cloud (Colab)** contenant :
+1. **Un notebook sur le cloud** contenant :
    - Les scripts en PySpark exécutables
    - Le preprocessing
    - Une étape de réduction de dimension de type PCA
