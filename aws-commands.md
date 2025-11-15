@@ -94,6 +94,12 @@ Ce fichier documente les commandes pour exécuter `create_cluster.sh`, capturer 
 
 ### Avant de lancer / vérifications (recommandé)
 
+- Vérifie ta configuration AWS CLI et tes identifiants :
+
+```bash
+aws sts get-caller-identity
+```
+
 Vérifie qu'aucun cluster n'est encore actif :
 
 ```bash
@@ -112,13 +118,62 @@ aws emr terminate-clusters --cluster-ids j-XXXXXXXXXXXXX --region eu-west-1
 bash -n create_cluster.sh
 ```
 
-- Vérifie ta configuration AWS CLI et tes identifiants :
+- Confirme que les ARNs, groupes de sécurité, paire de clés et sous-réseau utilisés dans le script appartiennent à ton compte/région. Le script fait référence à des ARNs IAM, des IDs de groupes de sécurité, une paire de clés et un sous-réseau — si l'un d'eux est incorrect, la création du cluster échouera ou créera des ressources dans un autre compte.
 
 ```bash
-aws sts get-caller-identity
+aws iam get-role --role-name EMR_DefaultRole
+aws iam get-role --role-name EMR_EC2_DefaultRole
+aws ec2 describe-key-pairs --key-names emr-p11-fruits-key
 ```
 
-- Confirme que les ARNs, groupes de sécurité, paire de clés et sous-réseau utilisés dans le script appartiennent à ton compte/région. Le script fait référence à des ARNs IAM, des IDs de groupes de sécurité, une paire de clés et un sous-réseau — si l'un d'eux est incorrect, la création du cluster échouera ou créera des ressources dans un autre compte.
+#### Vérifier les groupes de sécurité et sous-réseaux utilisés dans le script de création de cluster
+
+Avant de lancer `create_cluster.sh`, assure-toi que les IDs référencés existent bien dans ton compte et ta région AWS, et qu'ils appartiennent au bon VPC.
+
+**1. Vérifier les groupes de sécurité (Security Groups)**
+
+Dans le script, les groupes utilisés sont par exemple :
+	- `EmrManagedMasterSecurityGroup` : `sg-0ee431c02c5bc7fc4`
+	- `EmrManagedSlaveSecurityGroup` : `sg-03b5c1607e57d5935`
+
+Pour vérifier leur existence et leur VPC :
+
+```bash
+aws ec2 describe-security-groups --group-ids sg-0ee431c02c5bc7fc4 sg-03b5c1607e57d5935 --region eu-west-1 --query 'SecurityGroups[*].[GroupId,GroupName,Description,VpcId]' --output table
+```
+
+Vérifie que le VpcId correspond à celui de ton sous-réseau et que la région est correcte.
+
+**2. Vérifier le sous-réseau (Subnet)**
+
+Dans le script, le sous-réseau utilisé est par exemple :
+	- `SubnetIds` : `subnet-037413c77aa8d5ebb`
+
+Pour vérifier son existence, sa zone de disponibilité et son VPC :
+
+```bash
+aws ec2 describe-subnets --subnet-ids subnet-037413c77aa8d5ebb --region eu-west-1 --query 'Subnets[*].[SubnetId,AvailabilityZone,Tags[?Key==`Name`]|[0].Value,VpcId]' --output table
+```
+
+Vérifie que le VpcId est le même que celui des groupes de sécurité, et que la zone de disponibilité te convient.
+
+**3. Lister tous les groupes de sécurité ou sous-réseaux disponibles (pour choisir)**
+
+```bash
+# Groupes de sécurité
+aws ec2 describe-security-groups --region eu-west-1 --query 'SecurityGroups[*].[GroupId,GroupName,Description,VpcId]' --output table
+
+# Sous-réseaux
+aws ec2 describe-subnets --region eu-west-1 --query 'Subnets[*].[SubnetId,AvailabilityZone,Tags[?Key==`Name`]|[0].Value,VpcId]' --output table
+```
+
+**Astuce** : Si tu as un doute sur le VPC utilisé, tu peux aussi lister les VPCs :
+
+```bash
+aws ec2 describe-vpcs --region eu-west-1 --query 'Vpcs[*].[VpcId,Tags[?Key==`Name`]|[0].Value,CidrBlock]' --output table
+```
+
+Cela t'assure que tous les IDs utilisés dans `create_cluster.sh` sont valides et cohérents.
 
 - Sois conscient que cela va créer des instances EC2 et peut engendrer des coûts. Vérifie les types d'instances, tailles EBS et paramètres d'Auto-termination/IdleTimeout dans le script.
 
