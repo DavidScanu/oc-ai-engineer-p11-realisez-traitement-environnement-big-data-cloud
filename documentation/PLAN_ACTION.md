@@ -115,11 +115,11 @@ L'alternant a produit un notebook complet (`P8_Notebook_Linux_EMR_PySpark_V1.0.i
 
 ## Phase 2 : Développement Local
 
-### 2.1 Implémenter le broadcast des poids TensorFlow ✅ IMPLÉMENTÉ (À TESTER)
+### 2.1 Implémenter le broadcast des poids TensorFlow ✅ TERMINÉ
 
 **Objectif** : Optimiser la distribution du modèle sur les workers
 
-**Statut** : ✅ Code implémenté dans le notebook, prêt pour tests locaux
+**Statut** : ✅ Implémenté et testé avec succès sur 100 images
 
 **Contexte technique** :
 Sans broadcast, chaque worker recharge le modèle MobileNetV2 (plusieurs MB), ce qui :
@@ -128,13 +128,13 @@ Sans broadcast, chaque worker recharge le modèle MobileNetV2 (plusieurs MB), ce
 - Génère du trafic réseau inutile
 
 **Actions** :
-- [ ] Extraire les weights du modèle MobileNetV2
-- [ ] Implémenter `broadcast_weights = sc.broadcast(model.get_weights())`
-- [ ] Modifier la Pandas UDF pour utiliser les weights broadcastés
-- [ ] Reconstruire le modèle dans chaque worker avec les weights
-- [ ] Tester en local avec un subset du dataset
+- [x] Extraire les weights du modèle MobileNetV2
+- [x] Implémenter `broadcast_weights = sc.broadcast(model.get_weights())`
+- [x] Modifier la Pandas UDF pour utiliser les weights broadcastés
+- [x] Reconstruire le modèle dans chaque worker avec les weights
+- [x] Tester en local avec un subset du dataset
 
-**Code pattern attendu** :
+**Code pattern implémenté** :
 ```python
 # Dans la cellule de préparation du modèle
 model = MobileNetV2(weights='imagenet', include_top=False, pooling='avg')
@@ -149,74 +149,133 @@ def extract_features(content_series):
 
 **Livrables** ✅ :
 - ✅ Code implémenté dans `notebooks/p11-david-scanu-local-development.ipynb`
-- ✅ Extraction des poids: `model_weights = model.get_weights()`
+- ✅ Extraction des poids: 260 tenseurs, ~8.61 MB
 - ✅ Broadcast: `broadcast_weights = sc.broadcast(model_weights)`
 - ✅ Reconstruction dans workers: `local_model.set_weights(broadcast_weights.value)`
-- ⏳ Tests de performance à réaliser
+- ✅ Tests réussis: 100 images traitées avec succès
 
-**Date d'implémentation** : 24 octobre 2025
+**Date de complétion** : 7 novembre 2025
 
-### 2.2 Implémenter la réduction PCA en PySpark ✅ IMPLÉMENTÉ (À TESTER)
+### 2.2 Implémenter la réduction PCA en PySpark ✅ TERMINÉ
 
 **Objectif** : Ajouter une étape de dimensionnalité reduction après l'extraction de features
 
-**Statut** : ✅ Code implémenté dans le notebook, prêt pour tests locaux
+**Statut** : ✅ Implémenté et testé avec succès
 
 **Contexte technique** :
 MobileNetV2 (sans top, avec pooling='avg') produit des features de dimension 1280.
-La PCA permettra de réduire cette dimension tout en conservant la variance significative.
+La PCA permet de réduire cette dimension tout en conservant la variance significative.
 
 **Actions** :
-- [ ] Charger les features extraites (output de l'étape précédente)
-- [ ] Assembler les features en un vecteur avec `VectorAssembler`
-- [ ] Appliquer `pyspark.ml.feature.PCA` sur les features
-- [ ] Configurer le nombre de composantes (ex: 100, 200, ou variance expliquée)
-- [ ] Sauvegarder le résultat en CSV sur S3
-- [ ] Tester en local avec un subset du dataset
+- [x] Charger les features extraites (output de l'étape précédente)
+- [x] Convertir les arrays en vecteurs denses avec UDF
+- [x] Appliquer `pyspark.ml.feature.PCA` sur les features
+- [x] Configurer le nombre de composantes (k=200)
+- [x] Analyser la variance expliquée
+- [x] Sauvegarder le résultat en Parquet et CSV
+- [x] Tester en local avec un subset du dataset
 
-**Code pattern attendu** :
+**Code pattern implémenté** :
 ```python
-from pyspark.ml.feature import PCA, VectorAssembler
+from pyspark.ml.feature import PCA
+from pyspark.ml.linalg import Vectors, VectorUDT
 
-# Assembler les colonnes de features en un vecteur
-assembler = VectorAssembler(inputCols=feature_cols, outputCol="features")
-df_features = assembler.transform(df_extracted)
+# Convertir array → vecteur dense
+array_to_vector = udf(lambda a: Vectors.dense(a), VectorUDT())
+df_for_pca = df_features.withColumn("features_vector", array_to_vector(col("features")))
 
 # Appliquer PCA
-pca = PCA(k=100, inputCol="features", outputCol="pca_features")
-model_pca = pca.fit(df_features)
-df_pca = model_pca.transform(df_features)
+pca = PCA(k=200, inputCol="features_vector", outputCol="pca_features")
+pca_model = pca.fit(df_for_pca)
+df_pca = pca_model.transform(df_for_pca)
 
-# Sauvegarder
-df_pca.select("image_path", "label", "pca_features").write.csv("s3://bucket/pca_output/")
+# Sauvegarder en Parquet et CSV
+df_pca.write.parquet("path/pca_results")
+df_pca.write.csv("path/pca_results_csv")
 ```
 
 **Livrables** ✅ :
 - ✅ Code PCA implémenté avec `pyspark.ml.feature.PCA`
-- ✅ Configuration k=200 composantes (paramétrable)
-- ✅ Conversion array → vecteur dense avec UDF
-- ✅ Analyse de variance expliquée préparée
-- ✅ Sauvegarde en Parquet et CSV
-- ⏳ Tests et validation à réaliser
+- ✅ Configuration k=200 composantes (réduction 1280 → 200)
+- ✅ Conversion array → vecteur dense avec UDF custom
+- ✅ Analyse de variance expliquée avec graphique
+- ✅ Sauvegarde en Parquet (138.5 KB) et CSV (406.2 KB)
+- ✅ Tests réussis: 100 images en 4.28 secondes
 
-**Date d'implémentation** : 24 octobre 2025
+**Résultats** :
+- Réduction efficace: 1280 → 200 dimensions
+- Variance totale expliquée: excellente conservation
+- Format de sortie: Parquet (natif) + CSV (inspection)
 
-### 2.3 Intégration et tests locaux ⏳ EN ATTENTE
+**Date de complétion** : 7 novembre 2025
+
+### 2.3 Intégration et tests locaux ✅ TERMINÉ
 
 **Objectif** : Valider le pipeline complet en local
 
-**Statut** : ⏳ Prêt pour tests - nécessite installation dépendances et exécution notebook
+**Statut** : ✅ Pipeline complet validé avec succès
 
 **Actions** :
-- [ ] Créer un notebook consolidé avec toutes les modifications
-- [ ] Tester sur un subset du dataset (ex: 1000 images)
-- [ ] Vérifier les outputs à chaque étape
-- [ ] Mesurer les temps d'exécution
-- [ ] Documenter le code avec des commentaires clairs
+- [x] Créer un notebook consolidé avec toutes les modifications
+- [x] Tester sur un subset du dataset (100 images)
+- [x] Vérifier les outputs à chaque étape
+- [x] Mesurer les temps d'exécution
+- [x] Documenter le code avec des commentaires clairs
 
-**Livrables** :
-- Notebook PySpark fonctionnel en local
-- Documentation des résultats de tests
+**Livrables** ✅ :
+- ✅ Notebook PySpark fonctionnel: `notebooks/p11-david-scanu-local-development.ipynb`
+- ✅ Pipeline complet testé de bout en bout
+- ✅ Documentation exhaustive avec 8 sections principales
+- ✅ 4 modes de test configurables (MINI, SINGLE_CLASS, APPLES, FULL)
+- ✅ Gestion des warnings et logging optimisée
+- ✅ Code commenté et structuré
+
+**Résultats des tests** :
+- 100 images traitées avec 100% de succès
+- Extraction de features: ~2 minutes
+- PCA: ~4 secondes
+- Formats de sortie: Parquet + CSV
+- Distribution des classes: Apple Golden 1 (89), Apple Red Delicious (1), Apple Red Yellow 1 (10)
+
+**Points validés** :
+- ✅ Chargement images depuis filesystem
+- ✅ Extraction labels depuis chemins
+- ✅ MobileNetV2 + Broadcast fonctionnel
+- ✅ Pandas UDF distribuée correctement
+- ✅ PCA avec analyse de variance
+- ✅ Sauvegarde multi-format (Parquet/CSV)
+
+**Date de complétion** : 7 novembre 2025
+
+### 2.4 Validation sur datasets plus larges ⏳ RECOMMANDÉ
+
+**Objectif** : Valider les performances avant migration cloud
+
+**Statut** : ⏳ Optionnel mais recommandé
+
+**Contexte** :
+Le notebook offre 4 modes de test progressifs. Pour l'instant, seul le mode MINI (100 images) a été testé.
+
+**Actions recommandées** :
+- [ ] Tester avec 500 images (MODE MINI avec MAX_IMAGES=500) pour valider la scalabilité
+- [ ] Optionnel: Tester avec toutes les pommes (MODE APPLES, 6404 images) pour une validation finale
+- [ ] Mesurer les temps d'exécution et extrapoler pour le dataset complet
+- [ ] Vérifier l'utilisation mémoire et optimiser si nécessaire
+
+**Modes disponibles** :
+| Mode | Nombre d'images | Temps estimé | Usage |
+|------|-----------------|--------------|-------|
+| MINI | 100 (testé) | ~2-3 min | ✅ Développement validé |
+| MINI | 500 | ~8-10 min | Validation scalabilité |
+| APPLES | 6,404 | ~60 min | Validation finale |
+| FULL | 67,692 | N/A | AWS EMR uniquement |
+
+**Livrables optionnels** :
+- Métriques de performance sur datasets plus larges
+- Estimation du temps d'exécution sur AWS EMR
+- Optimisations identifiées si nécessaire
+
+**Note** : Cette étape n'est pas bloquante pour la migration cloud, mais permet de mieux anticiper les besoins en ressources AWS.
 
 ---
 
@@ -499,3 +558,22 @@ s3://mon-bucket-fruits/
 ---
 
 **Dernière mise à jour** : 24 Octobre 2025
+---
+
+## 🚀 Prochaine Étape : Migration AWS
+
+**Statut** : ✅ Phase 2 terminée - Prêt pour la migration cloud
+
+**Guides disponibles** :
+- 📘 [Guide complet de migration AWS](GUIDE_MIGRATION_AWS.md) - Instructions détaillées étape par étape
+- ⚡ [Quick Start AWS](QUICKSTART_AWS.md) - Démarrage rapide en 5 étapes
+- 🛠️ [Script helper](../scripts/aws_setup.sh) - Automatisation des commandes AWS
+
+**Pour démarrer la migration** :
+```bash
+# Voir le guide rapide
+cat documentation/QUICKSTART_AWS.md
+
+# Ou utiliser le script automatique
+./scripts/aws_setup.sh help
+```
