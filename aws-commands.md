@@ -329,7 +329,13 @@ Ce script permet d'arrêter proprement le cluster EMR pour éviter des coûts in
 Après la création du cluster EMR et une fois qu'il est en état `WAITING`, voici les étapes pour accéder à JupyterHub, configurer la persistance S3, et commencer à travailler avec Spark.
 
 
-### 0. Optionnel : Ajouter l’étape pour configurer JupyterHub (si pas fait en bootstrap)
+### 0. Optionnel : Ajouter l’étape (step) pour configurer JupyterHub (si pas fait en bootstrap)
+
+Dans `create_cluster.sh`, nous ajoutons l’étape pour exécuter le script `set_jupyter_env.sh` depuis S3, qui configure les variables d’environnement nécessaires dans JupyterHub.
+
+Ce script corrigé (qui supprime proprement l’ancien bloc, réécrit la config, et relance le conteneur Docker JupyterHub), tu es conforme aux bonnes pratiques pour EMR + JupyterHub + S3.
+
+Si nous uploadons ce script sur S3 et l’utilisons dans ton step EMR, la configuration sera proprement appliquée à chaque création de cluster. Nous ne devrions plus rencontrer de problème de lancement de serveur JupyterHub lié à la persistance S3 ou à la variable S3_ENDPOINT_URL.
 
 ```bash
 aws emr add-steps \
@@ -337,10 +343,6 @@ aws emr add-steps \
   --steps Type=CUSTOM_JAR,Name="SetJupyterEnv",ActionOnFailure=CONTINUE,Jar=command-runner.jar,Args=["bash","s3://oc-p11-fruits-david-scanu/scripts/set_jupyter_env.sh"] \
   --region eu-west-1
 ```
-
-Ca ne marche pas. 
-
-
 
 ### 1. **Récupérer le DNS du master EMR**
 
