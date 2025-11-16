@@ -2,8 +2,6 @@
 # Script d'installation des dépendances Python pour EMR
 # À placer sur S3
 
-sudo python3 -m pip install --upgrade pip
-
 # Installer les packages critiques
 sudo python3 -m pip install \
   pillow==10.4.0 \
@@ -15,6 +13,7 @@ sudo python3 -m pip install \
   boto3==1.34.34 \
   tqdm==4.66.1 \
   optree \
-  tensorflow
+  tensorflow \
+  "python-dateutil<=2.9.0"
 
 echo "✅ Dépendances Python installées avec succès"

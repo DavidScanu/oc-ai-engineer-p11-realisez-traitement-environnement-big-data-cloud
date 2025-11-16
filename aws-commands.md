@@ -326,6 +326,21 @@ Ce script permet d'arrêter proprement le cluster EMR pour éviter des coûts in
 
 ## Étapes suivantes après la création du cluster EMR
 
+Après la création du cluster EMR et une fois qu'il est en état `WAITING`, voici les étapes pour accéder à JupyterHub, configurer la persistance S3, et commencer à travailler avec Spark.
+
+
+### 0. Optionnel : Ajouter l’étape pour configurer JupyterHub (si pas fait en bootstrap)
+
+```bash
+aws emr add-steps \
+  --cluster-id $(cat cluster_id.txt) \
+  --steps Type=CUSTOM_JAR,Name="SetJupyterEnv",ActionOnFailure=CONTINUE,Jar=command-runner.jar,Args=["bash","s3://oc-p11-fruits-david-scanu/scripts/set_jupyter_env.sh"] \
+  --region eu-west-1
+```
+
+Ca ne marche pas. 
+
+
 
 ### 1. **Récupérer le DNS du master EMR**
 
@@ -342,11 +357,44 @@ aws emr describe-cluster \
 	  ```bash
 	  ssh -i ~/.ssh/emr-p11-fruits-key.pem -L 9443:localhost:9443 hadoop@$(cat master_dns.txt)
 	  ```
-	- Dans ton navigateur, ouvre : https://localhost:9443
-	- **Identifiants JupyterHub par défaut** :
-	  - Username : `jovyan`
-	  - Password : `jupyter`
-	- Ces identifiants sont ceux utilisés par défaut dans de nombreux déploiements JupyterHub Docker (notamment sur EMR), pour simplifier l'accès initial. Pour un usage sécurisé, il est recommandé de les modifier ou de configurer une authentification plus robuste.
+
+
+### Connexion à JupyterHub
+
+- Dans ton navigateur, ouvre : https://localhost:9443
+- **Identifiants JupyterHub par défaut** :
+	- Username : `jovyan`
+	- Password : `jupyter`
+- Ces identifiants sont ceux utilisés par défaut dans de nombreux déploiements JupyterHub Docker (notamment sur EMR), pour simplifier l'accès initial. Pour un usage sécurisé, il est recommandé de les modifier ou de configurer une authentification plus robuste.
+
+### Modifier la configuration de JupyterHub pour S3 et Spark (si besoin)
+
+Voici la commande unique, propre et corrigée à utiliser juste après ta connexion SSH pour écraser proprement la configuration d’environnement JupyterHub :
+
+```bash
+sudo sed -i "/^c.Spawner.environment = {$/,\$d" /etc/jupyter/conf/jupyterhub_config.py && echo "c.Spawner.environment = {
+    'SPARKMAGIC_CONF_DIR': '/etc/jupyter/conf',
+    'JUPYTER_ENABLE_LAB': 'yes',
+    'S3_ENDPOINT_URL': 's3.eu-west-1.amazonaws.com',
+    'AWS_REGION': 'eu-west-1',
+    'AWS_DEFAULT_REGION': 'eu-west-1'
+}" | sudo tee -a /etc/jupyter/conf/jupyterhub_config.py && sudo docker restart jupyterhub
+```
+
+Vérifier que la variable d’environnement est bien prise en compte dans le conteneur JupyterHub :
+
+```bash
+sudo cat /etc/jupyter/conf/jupyterhub_config.py
+```
+
+Exécuter cette commande dans le notebook JupyterHub pour vérifier les variables d’environnement :
+
+```python
+import os
+print(os.environ.get('S3_ENDPOINT_URL'))
+print(os.environ.get('AWS_REGION'))
+print(os.environ.get('AWS_DEFAULT_REGION'))
+```
 
 ### 3. Uploader le notebook de travail dans S3 pour la persistance 
 

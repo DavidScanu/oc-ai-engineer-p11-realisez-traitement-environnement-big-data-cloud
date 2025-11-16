@@ -73,9 +73,6 @@ CLUSTER_ID=$(aws emr create-cluster \
  --bootstrap-actions '[{
    "Name":"InstallPythonDeps",
    "Path":"s3://oc-p11-fruits-david-scanu/scripts/install_dependencies.sh"
- },{
-   "Name":"SetJupyterEnv",
-   "Path":"s3://oc-p11-fruits-david-scanu/scripts/set_jupyter_env.sh"
  }]' \
  --auto-scaling-role "arn:aws:iam::461506913677:role/EMR_AutoScaling_DefaultRole" \
  --scale-down-behavior "TERMINATE_AT_TASK_COMPLETION" \
@@ -100,3 +97,23 @@ echo ""
 # Sauvegarder le Cluster ID dans un fichier
 echo "$CLUSTER_ID" > cluster_id.txt
 echo "💾 Cluster ID sauvegardé dans: cluster_id.txt"
+
+
+# Attendre que le cluster soit en état WAITING
+while true; do
+  STATE=$(aws emr describe-cluster --cluster-id "$CLUSTER_ID" --region eu-west-1 --query 'Cluster.Status.State' --output text)
+  echo "État actuel du cluster: $STATE"
+  if [ "$STATE" = "WAITING" ]; then
+    break
+  elif [[ "$STATE" = "TERMINATING" || "$STATE" = "TERMINATED" || "$STATE" = "TERMINATED_WITH_ERRORS" ]]; then
+    echo "Le cluster s'est arrêté prématurément."
+    exit 1
+  fi
+  sleep 30
+done
+
+# Ajouter le step EMR pour appliquer la config JupyterHub
+aws emr add-steps \
+  --cluster-id "$CLUSTER_ID" \
+  --steps Type=CUSTOM_JAR,Name="SetJupyterEnv",ActionOnFailure=CONTINUE,Jar=command-runner.jar,Args=["bash","-c","aws s3 cp s3://oc-p11-fruits-david-scanu/scripts/set_jupyter_env.sh . && chmod +x set_jupyter_env.sh && sudo ./set_jupyter_env.sh"] \
+  --region eu-west-1
