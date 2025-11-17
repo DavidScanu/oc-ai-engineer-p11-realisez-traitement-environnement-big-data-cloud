@@ -203,6 +203,83 @@ Vérifie qu'ils sont bien présents :
 aws s3 ls s3://oc-p11-fruits-david-scanu/scripts/
 ```
 
+### Procédure pour configurer une clé SSH
+
+Générer la paire SSH locale (Linux / Codespace) :
+
+```bash
+mkdir -p ~/.ssh
+ssh-keygen -t ed25519 -f ~/.ssh/emr-p11-fruits-key-codespace -C "emr-p11-fruits-key-codespace" -N ""
+```
+
+Résultat :
+-- clé privée : `~/.ssh/emr-p11-fruits-key-codespace` (garde-la secrète)
+-- clé publique : `~/.ssh/emr-p11-fruits-key-codespace.pub`
+
+```bash
+# 
+chmod 600 ~/.ssh/emr-p11-fruits-key-codespace
+chmod 644 ~/.ssh/emr-p11-fruits-key-codespace.pub
+
+# 
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/emr-p11-fruits-key-codespace
+```
+
+Importer la clé publique en tant que key-pair nommée `emr-p11-fruits-key-codespace` (région `eu-west-1` dans ton dépôt) :
+
+```bash
+aws ec2 import-key-pair \
+  --key-name emr-p11-fruits-key-codespace \
+  --public-key-material fileb://~/.ssh/emr-p11-fruits-key-codespace.pub \
+  --region eu-west-1
+```
+
+Vérifier que la key-pair existe dans la région :
+
+```bash
+aws ec2 describe-key-pairs --region eu-west-1
+aws ec2 describe-key-pairs --key-names emr-p11-fruits-key --region eu-west-1
+aws ec2 describe-key-pairs --key-names emr-p11-fruits-key-codespace --region eu-west-1
+```
+
+Comparer l'empreinte AWS (base64 SHA256) avec ta clé publique locale :
+
+```bash
+# Empreinte AWS (copie la valeur KeyFingerprint depuis describe-key-pairs)
+aws ec2 describe-key-pairs --key-names emr-p11-fruits-key-codespace --region eu-west-1 --query 'KeyPairs[0].KeyFingerprint' --output text
+
+# Empreinte locale (format compatible) :
+ssh-keygen -lf ~/.ssh/emr-p11-fruits-key-codespace.pub | awk '{print $2}' | sed 's/^SHA256://'
+```
+
+#### Mettre à jour `create_cluster.sh` pour utiliser cette clé
+
+Après avoir importé la clé publique avec le nom `emr-p11-fruits-key-codespace`, il faut s'assurer que le script de création de cluster (`create_cluster.sh`) utilise ce même `KeyName`. Dans `create_cluster.sh` tu trouveras la section `--ec2-attributes` contenant la paire :
+
+	```bash
+	"KeyName":"emr-p11-fruits-key",
+	```
+
+Vérifier la valeur actuelle de KeyName dans `create_cluster.sh` :
+
+```bash
+grep -n '"KeyName"' create_cluster.sh || sed -n '1,200p' create_cluster.sh
+```
+
+Pour remplacer automatiquement le nom dans le script, exécute (depuis la racine du dépôt) :
+
+```bash
+sed -i 's/"KeyName":"emr-p11-fruits-key"/"KeyName":"emr-p11-fruits-key-codespace"/' create_cluster.sh
+```
+
+Vérifie ensuite que la modification est bien appliquée :
+
+```bash
+grep -n "KeyName" create_cluster.sh || sed -n '1,200p' create_cluster.sh
+```
+```
+
 ### Exécution rapide
 
 Rendre le script exécutable (si ce n'est pas déjà fait) :
@@ -328,8 +405,7 @@ Ce script permet d'arrêter proprement le cluster EMR pour éviter des coûts in
 
 Après la création du cluster EMR et une fois qu'il est en état `WAITING`, voici les étapes pour accéder à JupyterHub, configurer la persistance S3, et commencer à travailler avec Spark.
 
-
-### 0. Optionnel : Ajouter l’étape (step) pour configurer JupyterHub (si pas fait en bootstrap)
+### Optionnel : Ajouter l’étape (step) pour configurer JupyterHub (si pas fait en bootstrap)
 
 Dans `create_cluster.sh`, nous ajoutons l’étape pour exécuter le script `set_jupyter_env.sh` depuis S3, qui configure les variables d’environnement nécessaires dans JupyterHub.
 
@@ -344,9 +420,39 @@ aws emr add-steps \
   --region eu-west-1
 ```
 
-### 1. **Récupérer le DNS du master EMR**
+### Accéder à JupyterHub
+
+- Récupérer ton IP publique et ajouter la règle (exécuter après la création du cluster) : 
 
 ```bash
+# Ajouter la règle
+MYIP=$(curl -s https://checkip.amazonaws.com)
+echo "Ton IP publique: $MYIP"
+aws ec2 authorize-security-group-ingress \
+  --group-id sg-0ee431c02c5bc7fc4 \
+  --protocol tcp --port 22 --cidr ${MYIP}/32 \
+  --region eu-west-1
+
+# Vérifier la règle ajoutée (liste des règles ingress) : 
+aws ec2 describe-security-groups --group-ids sg-0ee431c02c5bc7fc4 --region eu-west-1 --query 'SecurityGroups[0].IpPermissions' --output json
+
+aws ec2 describe-security-groups \
+  --group-ids sg-0ee431c02c5bc7fc4 \
+  --region eu-west-1 \
+  --query 'SecurityGroups[0].IpPermissions[?FromPort==`22` && ToPort==`22`]' \
+  --output json
+
+# Après usage, révoquer la règle (supprimer l’entrée spécifique) :
+aws ec2 revoke-security-group-ingress \
+  --group-id sg-0ee431c02c5bc7fc4 \
+  --protocol tcp --port 22 --cidr ${MYIP}/32 \
+  --region eu-west-1
+```
+
+- Récupérer le DNS du master EMR :
+
+```bash
+# Récupérer le DNS master (si cluster créé)
 aws emr describe-cluster \
   --cluster-id $(cat cluster_id.txt) \
   --region eu-west-1 \
@@ -354,20 +460,23 @@ aws emr describe-cluster \
   --output text > master_dns.txt
 ```
 
-### 2. **Accéder à JupyterHub**
-	- Ouvre un tunnel SSH vers le master :
-	  ```bash
-	  ssh -i ~/.ssh/emr-p11-fruits-key.pem -L 9443:localhost:9443 hadoop@$(cat master_dns.txt)
-	  ```
+- Ouvre un tunnel SSH vers le master :
 
+Se connecter depuis mon environnement local :
 
-### Connexion à JupyterHub
+```bash
+ssh -i ~/.ssh/emr-p11-fruits-key.pem -L 9443:localhost:9443 hadoop@$(cat master_dns.txt)
+```
 
-- Dans ton navigateur, ouvre : https://localhost:9443
-- **Identifiants JupyterHub par défaut** :
-	- Username : `jovyan`
-	- Password : `jupyter`
-- Ces identifiants sont ceux utilisés par défaut dans de nombreux déploiements JupyterHub Docker (notamment sur EMR), pour simplifier l'accès initial. Pour un usage sécurisé, il est recommandé de les modifier ou de configurer une authentification plus robuste.
+Se connecter depuis le codespace : 
+
+```bash
+# Pour ouvrir le tunnel JupyterHub :
+ssh -i ~/.ssh/emr-p11-fruits-key-codespace -L 9443:localhost:9443 hadoop@$(cat master_dns.txt)
+
+# Se connecter (depuis ce Codespace si la clé privée y est) :
+ssh -i ~/.ssh/emr-p11-fruits-key-codespace hadoop@$(cat master_dns.txt)
+```
 
 ### Modifier la configuration de JupyterHub pour S3 et Spark (si besoin)
 
@@ -397,6 +506,16 @@ print(os.environ.get('S3_ENDPOINT_URL'))
 print(os.environ.get('AWS_REGION'))
 print(os.environ.get('AWS_DEFAULT_REGION'))
 ```
+
+### Connexion à JupyterHub
+
+- Dans ton navigateur, ouvre : https://localhost:9443
+- **Identifiants JupyterHub par défaut** :
+	- Username : `jovyan`
+	- Password : `jupyter`
+- Ces identifiants sont ceux utilisés par défaut dans de nombreux déploiements JupyterHub Docker (notamment sur EMR), pour simplifier l'accès initial. Pour un usage sécurisé, il est recommandé de les modifier ou de configurer une authentification plus robuste.
+
+
 
 ### 3. Uploader le notebook de travail dans S3 pour la persistance 
 
@@ -495,9 +614,13 @@ Si le serveur JupyterHub démarre mais que la création d'un notebook échoue (e
 
 1. **Vérifier les logs JupyterHub**
 
-  - Se connecter en SSH sur le master du cluster EMR :
+  - Se connecter en SSH sur le master du cluster EMR (environnement local):
     ```bash
     ssh -i ~/.ssh/emr-p11-fruits-key.pem hadoop@$(cat master_dns.txt)
+    ```
+  - Se connecter en SSH sur le master du cluster EMR (environnement codespace):
+    ```bash
+    ssh -i ~/.ssh/emr-p11-fruits-key-codespace hadoop@$(cat master_dns.txt)
     ```
   - Consulter les logs :
     ```bash

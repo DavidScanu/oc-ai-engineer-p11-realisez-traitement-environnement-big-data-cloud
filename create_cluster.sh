@@ -16,7 +16,7 @@ CLUSTER_ID=$(aws emr create-cluster \
    "InstanceProfile":"EMR_EC2_DefaultRole",
    "EmrManagedMasterSecurityGroup":"sg-0ee431c02c5bc7fc4",
    "EmrManagedSlaveSecurityGroup":"sg-03b5c1607e57d5935",
-   "KeyName":"emr-p11-fruits-key",
+   "KeyName":"emr-p11-fruits-key-codespace",
    "SubnetIds":["subnet-037413c77aa8d5ebb"]
  }' \
  --applications Name=JupyterHub Name=Hadoop Name=Hive Name=JupyterEnterpriseGateway Name=Livy Name=Spark Name=TensorFlow \
