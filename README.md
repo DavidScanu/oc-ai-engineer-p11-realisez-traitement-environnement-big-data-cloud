@@ -83,6 +83,38 @@ Projet de mise en place d'une architecture Big Data dans le cloud pour le traite
 - [Kaggle](https://www.kaggle.com/datasets/moltean/fruits)
 - [Téléchargement direct](https://s3.eu-west-1.amazonaws.com/course.oc-static.com/projects/Data_Scientist_P8/fruits.zip)
 
+
+## Audit des coûts AWS 
+
+Un script d'audit rapide est disponible pour lister les ressources AWS susceptibles d'engendrer des coûts (instances EC2 actives, volumes EBS, Elastic IP, buckets S3, NAT Gateway, RDS, EMR, etc.). Le script est non-destructif : il se contente de lister et résumer les ressources.
+
+Fichier : `scripts/aws_audit.sh`
+
+- Actions effectuées : vérifications EC2 (par région), EBS, snapshots, AMIs privées, Elastic IPs, ELB, NAT Gateways, RDS, EKS, EFS, EMR, S3 buckets (taille via aws s3 ls --recursive --summarize), option Cost Explorer (--costs).
+- Options : `--region`, `--all-regions`, -`-costs`, `--quiet`.
+
+Usage rapide :
+
+```bash
+# rendre exécutable (une seule fois)
+chmod +x scripts/aws_audit.sh
+
+# scan rapide pour la région eu-west-1
+./scripts/aws_audit.sh --region eu-west-1
+
+# scan toutes les régions (long)
+./scripts/aws_audit.sh --all-regions
+
+# inclure Cost Explorer (requiert permissions & activation)
+./scripts/aws_audit.sh --region eu-west-1 --costs
+```
+
+Remarques :
+- Le calcul de la taille des buckets S3 via `aws s3 ls --recursive --summarize` peut être lent pour les gros buckets (par ex. `mlflow-artefact-store`).
+- L'option `--costs` utilise l'API Cost Explorer (région `us-east-1`) et nécessite que le service soit activé et que l'utilisateur ait la permission `ce:GetCostAndUsage`.
+- Le script n'effectue aucune suppression ; les actions de nettoyage restent manuelles.
+
+
 ## 📚 Ressources
 
 - [Notebook de l'alternant](https://s3.eu-west-1.amazonaws.com/course.oc-static.com/projects/Data_Scientist_P8/P8_Mode_ope%CC%81ratoire.zip)
