@@ -114,6 +114,17 @@ Remarques :
 - L'option `--costs` utilise l'API Cost Explorer (région `us-east-1`) et nécessite que le service soit activé et que l'utilisateur ait la permission `ce:GetCostAndUsage`.
 - Le script n'effectue aucune suppression ; les actions de nettoyage restent manuelles.
 
+### Obtenir coûts par service sur 30 jours (Cost Explorer) :
+
+```bash
+aws ce get-cost-and-usage \
+  --time-period Start=$(date -d '30 days ago' +%Y-%m-%d),End=$(date +%Y-%m-%d) \
+  --granularity MONTHLY --metrics UnblendedCost \
+  --group-by Type=DIMENSION,Key=SERVICE \
+  --region us-east-1 \
+  --query "ResultsByTime[0].Groups[].{Service: Keys[0],Amount: Metrics.UnblendedCost.Amount}" \
+  --output table
+```
 
 ## 📚 Ressources
 

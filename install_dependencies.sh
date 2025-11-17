@@ -5,6 +5,10 @@
 # Installer les packages critiques
 sudo python3 -m pip install \
   pillow==10.4.0 \
+  ipython \
+  ipykernel \
+  notebook \
+  jupyterlab \
   pandas==2.2.0 \
   numpy==1.26.4 \
   pyarrow==15.0.0 \

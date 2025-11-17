@@ -462,12 +462,6 @@ aws emr describe-cluster \
 
 - Ouvre un tunnel SSH vers le master :
 
-Se connecter depuis mon environnement local :
-
-```bash
-ssh -i ~/.ssh/emr-p11-fruits-key.pem -L 9443:localhost:9443 hadoop@$(cat master_dns.txt)
-```
-
 Se connecter depuis le codespace : 
 
 ```bash
@@ -478,19 +472,13 @@ ssh -i ~/.ssh/emr-p11-fruits-key-codespace -L 9443:localhost:9443 hadoop@$(cat m
 ssh -i ~/.ssh/emr-p11-fruits-key-codespace hadoop@$(cat master_dns.txt)
 ```
 
-### Modifier la configuration de JupyterHub pour S3 et Spark (si besoin)
-
-Voici la commande unique, propre et corrigée à utiliser juste après ta connexion SSH pour écraser proprement la configuration d’environnement JupyterHub :
+Se connecter depuis mon environnement local :
 
 ```bash
-sudo sed -i "/^c.Spawner.environment = {$/,\$d" /etc/jupyter/conf/jupyterhub_config.py && echo "c.Spawner.environment = {
-    'SPARKMAGIC_CONF_DIR': '/etc/jupyter/conf',
-    'JUPYTER_ENABLE_LAB': 'yes',
-    'S3_ENDPOINT_URL': 's3.eu-west-1.amazonaws.com',
-    'AWS_REGION': 'eu-west-1',
-    'AWS_DEFAULT_REGION': 'eu-west-1'
-}" | sudo tee -a /etc/jupyter/conf/jupyterhub_config.py && sudo docker restart jupyterhub
+ssh -i ~/.ssh/emr-p11-fruits-key.pem -L 9443:localhost:9443 hadoop@$(cat master_dns.txt)
 ```
+
+### Modifier la configuration de JupyterHub pour S3 et Spark (si besoin)
 
 Vérifier que la variable d’environnement est bien prise en compte dans le conteneur JupyterHub :
 
@@ -498,26 +486,42 @@ Vérifier que la variable d’environnement est bien prise en compte dans le con
 sudo cat /etc/jupyter/conf/jupyterhub_config.py
 ```
 
-Exécuter cette commande dans le notebook JupyterHub pour vérifier les variables d’environnement :
+Voici la commande unique, propre et corrigée à utiliser juste après ta connexion SSH pour écraser proprement la configuration d’environnement JupyterHub :
 
-```python
-import os
-print(os.environ.get('S3_ENDPOINT_URL'))
-print(os.environ.get('AWS_REGION'))
-print(os.environ.get('AWS_DEFAULT_REGION'))
+```bash
+sudo cp /etc/jupyter/conf/jupyterhub_config.py /etc/jupyter/conf/jupyterhub_config.py.bak.$(date -u +"%Y%m%dT%H%M%SZ")
+ls -l /etc/jupyter/conf/jupyterhub_config.py*
 ```
 
-### Connexion à JupyterHub
+```bash
+# Upload du fichier dans la machine EMR (depuis votre machine locale / Codespace)
+scp -i ~/.ssh/emr-p11-fruits-key-codespace /workspaces/oc-ai-engineer-p11-realisez-traitement-environnement-big-data-cloud/jupyterhub_config_working.py hadoop@$(cat master_dns.txt):/tmp/
 
-- Dans ton navigateur, ouvre : https://localhost:9443
-- **Identifiants JupyterHub par défaut** :
-	- Username : `jovyan`
-	- Password : `jupyter`
-- Ces identifiants sont ceux utilisés par défaut dans de nombreux déploiements JupyterHub Docker (notamment sur EMR), pour simplifier l'accès initial. Pour un usage sécurisé, il est recommandé de les modifier ou de configurer une authentification plus robuste.
+# ensuite, sur l'EMR (ou via ssh -i ... hadoop@$(cat master_dns.txt) '...'):
+sudo mv /tmp/jupyterhub_config_working.py /etc/jupyter/conf/jupyterhub_config.py
+sudo chown root:root /etc/jupyter/conf/jupyterhub_config.py
+sudo chmod 644 /etc/jupyter/conf/jupyterhub_config.py
 
+# Vérifier que le fichier de configuration a bien été uploadé
+sudo cat /etc/jupyter/conf/jupyterhub_config.py
+```
 
+Redémarrer le conteneur Docker : 
 
-### 3. Uploader le notebook de travail dans S3 pour la persistance 
+```bash
+# Redémarrage du conteneur
+sudo docker restart jupyterhub
+# Vérification de l'état du conteneur
+sudo docker ps --filter "name=jupyterhub" --format 'table {{.ID}}\t{{.Names}}\t{{.Status}}'
+# Vérifier que le port 9443 est bien écouté :
+sudo ss -ltnp | grep 9443 || sudo netstat -ltnp | grep 9443
+# Vérifier les logs en cas de problème de spawn
+sudo docker logs jupyterhub
+# ou 
+sudo docker logs -f jupyterhub
+```
+
+### Uploader le notebook de travail dans S3 pour la persistance 
 
 - Avant de commencer à travailler, upload le notebook `notebooks/p11-david-scanu-EMR-production.ipynb` dans ton bucket S3 pour t'assurer que la persistance fonctionne correctement :
 
@@ -535,7 +539,15 @@ En alternative, crée un notebook directement depuis JupyterHub et vérifie qu�
 - Si besoin, importe `notebooks/p11-david-scanu-EMR-production.ipynb` via le bouton "Upload" de JupyterHub (https://localhost:9443).
 - Sinon, crée un nouveau notebook en choisissant le kernel PySpark et travaille directement dedans ; vérifie ensuite que le fichier apparaît dans ton bucket S3.
 
-### 4. **Charger et explorer les données**
+### Connexion à JupyterHub
+
+- Dans ton navigateur, ouvre : https://localhost:9443
+- **Identifiants JupyterHub par défaut** :
+	- Username : `jovyan`
+	- Password : `jupyter`
+- Ces identifiants sont ceux utilisés par défaut dans de nombreux déploiements JupyterHub Docker (notamment sur EMR), pour simplifier l'accès initial. Pour un usage sécurisé, il est recommandé de les modifier ou de configurer une authentification plus robuste.
+
+### 4. Charger et explorer les données
 
 - Sélectionner le kernel **PySpark** fourni par EMR (et non un kernel Python classique).
 - Ouvre ce notebook pour exécuter le pipeline et lire les données depuis S3.
@@ -599,7 +611,6 @@ Si tu vois des chemins S3 s'afficher, l'accès S3 via Spark est validé. Les not
 
 **Bonnes pratiques** : Sauvegarde régulièrement tes notebooks, surveille l’utilisation des ressources, et arrête toujours le cluster après usage.
 
-
 ---
 
 ## Débogage de la persistance S3 et de JupyterHub sur EMR
@@ -627,8 +638,8 @@ Si le serveur JupyterHub démarre mais que la création d'un notebook échoue (e
     sudo cat /var/log/jupyter/jupyter.log | tail -n 100
     ```
 
-
 2. **Vérifier la configuration du point d'accès S3**
+
 	 - Le fichier de configuration se trouve généralement ici :
     ```bash
     sudo cat /etc/jupyter/conf/jupyterhub_config.py
@@ -637,13 +648,12 @@ Si le serveur JupyterHub démarre mais que la création d'un notebook échoue (e
     ```python
     c.Spawner.environment['S3_ENDPOINT_URL'] = 'https://s3.eu-west-1.amazonaws.com'
     ```
-
 	 - L'endpoint doit correspondre à la région de votre bucket S3 (ex : `eu-west-1`).
 
 3. **Modifier la configuration si besoin**
 	 - Pour corriger l'endpoint, utiliser la commande suivante :
     ```bash
-    sudo sed -i "s|s3_endpoint_url = os.environ.get('S3_ENDPOINT_URL', .*|s3_endpoint_url = os.environ.get('S3_ENDPOINT_URL', 'https://s3.eu-west-1.amazonaws.com')|" /etc/jupyter/conf/jupyterhub_config.py
+    sudo sed -i "s|s3_endpoint_url = os.environ.get('S3_ENDPOINT_URL', .*|s3_endpoint_url = os.environ.get('S3_ENDPOINT_URL', 's3.eu-west-1.amazonaws.com')|" /etc/jupyter/conf/jupyterhub_config.py
     ```
 
 4. **Activer le mode debug pour JupyterHub**
