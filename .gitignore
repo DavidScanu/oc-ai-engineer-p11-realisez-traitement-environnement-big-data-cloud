@@ -223,6 +223,7 @@ cluster_info.json
 cluster_id.txt
 create_cluster_output.txt
 master_dns.txt
+step_id.txt
 
 # clé privée SSH (private + optional public)
 .ssh/emr-p11-fruits-key
@@ -230,3 +231,6 @@ master_dns.txt
 .ssh/emr-p11-fruits-key-codespace
 .ssh/emr-p11-fruits-key-codespace.pub
 .ssh/*.pem
+
+# Logs
+logs/

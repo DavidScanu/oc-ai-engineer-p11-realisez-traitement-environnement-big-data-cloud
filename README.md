@@ -51,11 +51,13 @@ Projet de mise en place d'une architecture Big Data dans le cloud pour le traite
 - Ajouter le broadcast des weights du modèle TensorFlow
 
 ### 2. Migration cloud (AWS)
+
 - Configurer S3 dans une région européenne (RGPD)
 - Mettre en place un cluster EMR
 - Exécuter la chaîne de traitement complète sur le cloud
 
 ### 3. Livrables
+
 - **Notebook cloud PySpark** exécutable (preprocessing + PCA)
   - EMR Notebook (recommandé avec AWS EMR) ou Databricks Notebook
   - ⚠️ Pas Google Colab (incompatible avec l'architecture EMR native)
@@ -83,6 +85,40 @@ Projet de mise en place d'une architecture Big Data dans le cloud pour le traite
 - [Kaggle](https://www.kaggle.com/datasets/moltean/fruits)
 - [Téléchargement direct](https://s3.eu-west-1.amazonaws.com/course.oc-static.com/projects/Data_Scientist_P8/fruits.zip)
 
+
+## Stockage des données sur Amazon S3
+
+- Bucket du projet : `s3://oc-p11-fruits-david-scanu/`
+- Jeu de données : `s3://oc-p11-fruits-david-scanu/data/raw/Training/`
+  - Exemple de chemin vers une image : `s3://oc-p11-fruits-david-scanu/data/raw/Training/Apple Braeburn/0_100.jpg`
+- Résultats : 
+  - Information sur le jeu de données : `s3://oc-p11-fruits-david-scanu/results/dataset/`
+  - Features : `s3://oc-p11-fruits-david-scanu/results/features/`
+  - PCA : `s3://oc-p11-fruits-david-scanu/results/pca/`
+- Scripts : 
+  - Installation des dépendences Python : `s3://oc-p11-fruits-david-scanu/scripts/install_dependencies.sh`
+
+## Exécution la chaîne de traitement complète sur le cloud
+
+### Étape 1 : Exemple simple 
+
+Mettre en place une chaine de traitement PySpark qui charge et lis notre jeu de données, créé un DataFrame contenant une ligne pour chaque image (nom de fichier, chemin s3, label, ...). 
+
+**Objectif :**
+- Installer les bibliothèque Python
+- Lire les données depuis S3
+- Écrire les résultats vers S3
+
+**Élements :**
+- Script PySpark de traitement des données 
+- Script d'action Bootstrap d'installation des bibliothèques Python 
+- Script de création de cluster EMR
+- Script de soumission de job (step)
+- Script de nettoyage
+- Variables d'environnement / Configuration
+- Documentation des étapes de mise en place du projet 
+
+Tous ces élements devront être créés et stockés dans ce dossier : `traitement/etape_1`
 
 ## Audit des coûts AWS 
 
@@ -125,6 +161,11 @@ aws ce get-cost-and-usage \
   --query "ResultsByTime[0].Groups[].{Service: Keys[0],Amount: Metrics.UnblendedCost.Amount}" \
   --output table
 ```
+
+## Documentation 
+
+- [Tutorial: Getting started with Amazon EMR](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-gs.html)
+- [Comment résoudre les problèmes liés à l'installation de bibliothèques Python sur mon cluster EMR ?](https://repost.aws/fr/knowledge-center/emr-troubleshoot-python-libraries)
 
 ## 📚 Ressources
 
