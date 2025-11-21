@@ -58,13 +58,34 @@ rm -f config.json
 
 ---
 
-### 3. Scripts EMR Studio non utilisés
+### 3. Scripts obsolètes à la racine du projet
 
-**Raison** : Scripts de setup EMR Studio (approche abandonnée).
+**Raison** : Anciennes versions des scripts (maintenant dans `traitement/etape_1/` et `traitement/etape_2/`).
+
+```bash
+rm -f create_cluster.sh
+rm -f create_cluster_original.sh
+rm -f install_dependencies.sh
+rm -f monitor_cluster.sh
+rm -f terminate_cluster.sh
+```
+
+---
+
+### 4. Scripts non utilisés dans le dossier `scripts/`
+
+**Raison** : Scripts de setup génériques et utilitaires non utilisés pour les étapes 1 et 2.
 
 ```bash
 rm -f scripts/aws_emr_studio_setup.sh
+rm -f scripts/aws_setup.sh
+rm -f scripts/convert_notebook_to_emr.py
+rm -f scripts/migrate_config.sh
+rm -f scripts/update_aws_setup.py
 ```
+
+**À CONSERVER** :
+- ✅ `scripts/aws_audit.sh` - Utilitaire d'audit AWS (toujours utile)
 
 ---
 
@@ -107,12 +128,29 @@ git commit -m "save: Avant nettoyage des fichiers obsolètes"
 git push
 
 # 2. Supprimer les fichiers obsolètes
+
+# Dossier documentation/
 rm -rf documentation/
+
+# Configs JupyterHub à la racine
 rm -f jupyterhub_config_not_working.py
 rm -f jupyterhub_config_working.py
 rm -f set_jupyter_env.sh
 rm -f config.json
+
+# Scripts obsolètes à la racine
+rm -f create_cluster.sh
+rm -f create_cluster_original.sh
+rm -f install_dependencies.sh
+rm -f monitor_cluster.sh
+rm -f terminate_cluster.sh
+
+# Scripts non utilisés dans scripts/
 rm -f scripts/aws_emr_studio_setup.sh
+rm -f scripts/aws_setup.sh
+rm -f scripts/convert_notebook_to_emr.py
+rm -f scripts/migrate_config.sh
+rm -f scripts/update_aws_setup.py
 
 # 3. Vérifier ce qui reste
 tree -L 2 -I 'node_modules|.git|__pycache__|output|logs'
@@ -144,11 +182,15 @@ ls -la jupyterhub_config_*.py set_jupyter_env.sh config.json
 rm -f jupyterhub_config_*.py set_jupyter_env.sh config.json
 git status
 
-# 5. Supprimer script EMR Studio
-rm -f scripts/aws_emr_studio_setup.sh
+# 5. Supprimer les scripts obsolètes à la racine
+rm -f create_cluster.sh create_cluster_original.sh install_dependencies.sh monitor_cluster.sh terminate_cluster.sh
 git status
 
-# 6. Commit final
+# 6. Supprimer les scripts non utilisés dans scripts/
+rm -f scripts/aws_emr_studio_setup.sh scripts/aws_setup.sh scripts/convert_notebook_to_emr.py scripts/migrate_config.sh scripts/update_aws_setup.py
+git status
+
+# 7. Commit final
 git add -A
 git commit -m "chore: Nettoyage fichiers obsolètes"
 git push
@@ -162,10 +204,10 @@ Estimation de l'espace libéré :
 
 ```bash
 # Avant nettoyage
-du -sh documentation/ jupyterhub_config_*.py set_jupyter_env.sh config.json scripts/aws_emr_studio_setup.sh 2>/dev/null | awk '{sum+=$1} END {print sum " KB libérés"}'
+du -sh documentation/ *.sh jupyterhub_config_*.py set_jupyter_env.sh config.json scripts/*.sh scripts/*.py 2>/dev/null | awk '{sum+=$1} END {print sum " KB libérés"}'
 ```
 
-**Estimation** : ~200-300 KB (fichiers markdown et configs)
+**Estimation** : ~300-500 KB (fichiers markdown, configs et scripts)
 
 ---
 
@@ -185,7 +227,8 @@ git status
 **Attendu** :
 - ✅ `traitement/etape_1/` et `traitement/etape_2/` intacts
 - ✅ `notebooks/` intact
-- ✅ `scripts/aws_audit.sh` présent
+- ✅ `scripts/aws_audit.sh` présent (seul fichier dans scripts/)
+- ✅ Pas de fichiers `.sh` à la racine
 - ✅ Pas de fichiers JupyterHub ou EMR Studio
 
 ---
@@ -196,18 +239,22 @@ git status
 git commit -m "chore: 🗑️ Nettoyage fichiers obsolètes
 
 Suppression des fichiers liés aux approches abandonnées :
-- documentation/ (guides JupyterHub/EMR Studio non fonctionnels)
-- jupyterhub_config_*.py (configs JupyterHub inutilisées)
-- set_jupyter_env.sh (script JupyterHub)
-- config.json (config générique)
-- scripts/aws_emr_studio_setup.sh (EMR Studio non utilisé)
+
+1. documentation/ (guides JupyterHub/EMR Studio non fonctionnels)
+2. jupyterhub_config_*.py (configs JupyterHub inutilisées)
+3. Scripts obsolètes à la racine :
+   - create_cluster.sh, monitor_cluster.sh, terminate_cluster.sh
+   - install_dependencies.sh (anciennes versions)
+4. Scripts non utilisés dans scripts/ :
+   - aws_emr_studio_setup.sh, aws_setup.sh
+   - convert_notebook_to_emr.py, migrate_config.sh, update_aws_setup.py
 
 Approche finale retenue : EMR Steps + scripts bash (traitement/)
 
 Conservation :
-- traitement/etape_1/ et etape_2/ (pipeline principal)
+- traitement/etape_1/ et etape_2/ (pipelines fonctionnels)
 - notebooks/ (développement local)
-- scripts/aws_audit.sh (utilitaire)
+- scripts/aws_audit.sh (seul utilitaire conservé)
 "
 ```
 
