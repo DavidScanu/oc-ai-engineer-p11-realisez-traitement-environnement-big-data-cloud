@@ -21,13 +21,131 @@ Ce projet implémente un **pipeline PySpark distribué** sur AWS EMR pour :
 - Réduire les dimensions avec **PCA** (1280 → 50 composantes)
 - Traiter jusqu'à **~67,000 images** en mode distribué
 
+---
+
+## 📖 Étapes réalisées
+
+Ce projet a été développé en plusieurs étapes pour migrer progressivement le traitement des données du local vers le cloud AWS EMR.
+
+### 🔬 Étape 0 : Développement local et amélioration du notebook de l'alternant
+
+**Objectif** : Comprendre et améliorer le code de base avant la migration cloud
+
+- 📓 **Notebook local créé** : [p11-david-scanu-local-development.ipynb](notebooks/p11-david-scanu-local-development.ipynb)
+- ✅ **Analyse du travail de l'alternant** : Étude du notebook PySpark existant ([notebooks/alternant/](notebooks/alternant/))
+- ✅ **Corrections et améliorations** :
+  - Ajout du broadcast des poids TensorFlow (absent dans le notebook de l'alternant)
+  - Implémentation de la réduction PCA avec MLlib (manquante)
+  - Tests locaux du pipeline complet
+  - Validation de la logique avant déploiement cloud
+- 🎯 **Livrable** : Notebook fonctionnel avec pipeline end-to-end testé localement
+
+> 💡 **Approche** : Cette étape a permis de valider la logique métier en local (Spark standalone) avant de passer à l'infrastructure cloud coûteuse.
+
+---
+
+### ✅ Étape 1 : Validation de l'infrastructure cloud
+
+**Objectif** : Mettre en place et tester le cluster EMR avec un pipeline simple
+
+- 🏗️ **Infrastructure AWS déployée** :
+  - Création du cluster EMR (Master + 2 Core nodes)
+  - Configuration S3 (bucket, IAM roles, security groups)
+  - Scripts d'automatisation bash (11 scripts)
+  - Bootstrap action pour installer les dépendances Python
+- ✅ **Pipeline de test** :
+  - Lecture de ~67,000 images depuis S3
+  - Extraction des métadonnées (path, label, classe)
+  - Calcul de statistiques par classe
+  - Écriture des résultats sur S3 (CSV)
+- 🎯 **Validation** :
+  - ✅ Lecture/écriture S3 fonctionnelle
+  - ✅ PySpark distribué opérationnel
+  - ✅ Bootstrap action testée
+  - ✅ Gestion des coûts (auto-terminaison)
+
+**Documentation** : [traitement/etape_1/](traitement/etape_1/)
+
+**Résultats** :
+- Durée : ~2-5 min (67,000 images)
+- Coût : ~0.05€
+- Output : Métadonnées + statistiques CSV
+
+> 💡 **Importance** : Cette étape a validé l'infrastructure AWS avant d'ajouter la complexité du traitement TensorFlow + PCA.
+
+---
+
+### 🎯 Étape 2 : Pipeline complet Feature Extraction + PCA
+
+**Objectif** : Implémenter le pipeline big data complet avec TensorFlow et réduction de dimensions
+
+- 🧠 **Feature Extraction** :
+  - MobileNetV2 pré-entraîné (Transfer Learning)
+  - Broadcast des poids TensorFlow (~14 MB) vers tous les workers
+  - Pandas UDF pour traitement distribué
+  - Extraction de 1280 features par image
+- 📉 **Réduction PCA** :
+  - PCA avec MLlib (1280 → 50 dimensions)
+  - Variance conservée : **92.93%**
+  - Sauvegarde du modèle PCA pour réutilisation
+- 📦 **Optimisations appliquées** :
+  - Broadcast TensorFlow : -90% transferts réseau
+  - Pandas UDF + Apache Arrow : 10-100× plus rapide
+  - Parquet : -50% stockage vs CSV
+  - Auto-terminaison cluster (4h idle timeout)
+- 🎯 **Résultats validés** (mode MINI - 300 images) :
+  - Durée : 3min 34s
+  - Débit : ~84 images/min
+  - Coût : ~0.50€
+  - Scalabilité estimée (FULL - 67,000 images) : ~2-3h, ~1.60€
+
+**Documentation complète** : [traitement/etape_2/](traitement/etape_2/)
+
+**Quickstart** : [traitement/etape_2/QUICKSTART.md](traitement/etape_2/QUICKSTART.md)
+
+**Résultats détaillés** : [traitement/etape_2/docs/RESULTATS.md](traitement/etape_2/docs/RESULTATS.md)
+
+> 🚀 **Accomplissement majeur** : Pipeline production-ready avec toutes les optimisations Big Data (broadcast, UDF, Parquet) et conformité GDPR.
+
+---
+
+### 📊 Étape 3 : Documentation et livrables
+
+**Objectif** : Documenter l'architecture, les workflows et les résultats pour faciliter la maintenance
+
+- 📚 **Documentation technique** :
+  - Architecture AWS (diagrammes, composants)
+  - Workflows détaillés (création cluster, soumission jobs)
+  - Scripts d'automatisation documentés
+  - Guide de démarrage rapide (QUICKSTART.md)
+- 📈 **Résultats et analyses** :
+  - Rapport de performance (temps, coûts, débit)
+  - Analyse de variance PCA
+  - Scalabilité estimée
+  - Recommandations d'optimisation
+- 🛠️ **Outils de gestion** :
+  - Scripts d'audit AWS ([scripts/aws_audit.sh](scripts/aws_audit.sh))
+  - Monitoring des coûts
+  - Procédures de nettoyage
+
+**Livrables finaux** :
+- ✅ Code PySpark production-ready
+- ✅ 11 scripts bash d'automatisation
+- ✅ 4 documents techniques détaillés
+- ✅ Données S3 (images + résultats PCA)
+- ✅ Architecture GDPR-compliant
+
+> 📖 **Documentation exhaustive** pour faciliter la reprise du projet et la mise en production.
+
+---
+
 ## 🎯 Objectifs réalisés
 
-✅ **Pipeline PySpark complet** avec broadcast des poids TensorFlow
-✅ **Réduction de dimension PCA** implémentée avec MLlib
-✅ **Migration cloud AWS** (EMR + S3)
-✅ **Conformité GDPR** (région eu-west-1)
-✅ **Architecture production-ready** avec scripts d'automatisation
+- ✅ **Pipeline PySpark complet** avec broadcast des poids TensorFlow
+- ✅ **Réduction de dimension PCA** implémentée avec MLlib
+- ✅ **Migration cloud AWS** (EMR + S3)
+- ✅ **Conformité GDPR** (région eu-west-1)
+- ✅ **Architecture production-ready** avec scripts d'automatisation
 
 > ⚠️ **Note** : Pas d'entraînement de modèle. L'objectif est de mettre en place les briques de traitement **scalables**.
 
@@ -255,7 +373,7 @@ cd traitement/etape_2
 **Fruits-360 Dataset**
 
 - **Créateur** : Mihai Oltean (2017-)
-- **Taille** : 155,491 images réparties en 224 classes (version 100x100)
+- **Taille** : 155,491 images réparties en 226 classes (version 100x100)
 - **Format** : JPG, 100x100 pixels (standardisé)
 - **Contenu** : Fruits, légumes, noix et graines avec de multiples variétés
   - 29 types de pommes
@@ -358,7 +476,7 @@ aws ce get-cost-and-usage \
 
 | Resource | Lien |
 |----------|------|
-| **Documentation Étape 2** | [traitement/etape_2/docs/](traitement/etape_2/docs/) |
+| **Documentation** | [traitement/etape_2/docs/](traitement/etape_2/docs/) |
 | **Quickstart** | [traitement/etape_2/QUICKSTART.md](traitement/etape_2/QUICKSTART.md) |
 | **Résultats validés** | [traitement/etape_2/docs/RESULTATS.md](traitement/etape_2/docs/RESULTATS.md) |
 
@@ -371,43 +489,6 @@ aws ce get-cost-and-usage \
 
 ---
 
-## 🗑️ Nettoyage recommandé
-
-### Fichiers obsolètes à supprimer
-
-Le dossier **`documentation/`** contient des fichiers liés aux tentatives JupyterHub (approche abandonnée). Vous pouvez les supprimer :
-
-```bash
-# Dossier documentation (approche JupyterHub abandonnée)
-rm -rf documentation/
-
-# Fichiers de config JupyterHub (racine du projet)
-rm -f jupyterhub_config_*.py
-rm -f set_jupyter_env.sh
-rm -f config.json
-
-# Scripts EMR Studio (non utilisés)
-rm -f scripts/aws_emr_studio_setup.sh
-```
-
-### Fichiers à conserver
-
-```
-✅ traitement/          # Pipeline principal (étape 1 + 2)
-✅ notebooks/           # Notebooks de dev local
-✅ scripts/aws_audit.sh # Audit coûts AWS
-✅ README.md            # Ce fichier
-✅ .claude/             # Instructions Claude
-```
-
-**Note** : Faites un commit avant de nettoyer, pour garder l'historique !
-
----
-
-## 👤 Auteur
-
-> 🎓 OpenClassrooms • Parcours [AI Engineer](https://openclassrooms.com/fr/paths/795-ai-engineer) | 👋 *Étudiant* : [David Scanu](https://www.linkedin.com/in/davidscanu14/)
-
 ## 📅 Dates
 
 - **Début** : 24 Octobre 2025
@@ -418,13 +499,19 @@ rm -f scripts/aws_emr_studio_setup.sh
 
 ## 🏆 Accomplissements
 
-✅ **Pipeline PySpark** complet et scalable
-✅ **Architecture AWS** production-ready (EMR + S3)
-✅ **Broadcast TensorFlow** pour optimisation réseau
-✅ **PCA MLlib** avec 92.93% de variance conservée
-✅ **Scripts d'automatisation** (11 scripts bash)
-✅ **Documentation exhaustive** (4 documents techniques)
-✅ **Conformité GDPR** (région eu-west-1)
-✅ **Gestion des coûts** (< 3€ total projet)
+- ✅ **Pipeline PySpark** complet et scalable
+- ✅ **Architecture AWS** production-ready (EMR + S3)
+- ✅ **Broadcast TensorFlow** pour optimisation réseau
+- ✅ **PCA MLlib** avec 92.93% de variance conservée
+- ✅ **Scripts d'automatisation** (11 scripts bash)
+- ✅ **Documentation exhaustive** (4 documents techniques)
+- ✅ **Conformité GDPR** (région eu-west-1)
+- ✅ **Gestion des coûts** (< 3€ total projet)
 
 **🚀 Production-ready | 📊 Big Data optimisé | 🔐 GDPR compliant**
+
+---
+
+## 👤 Auteur
+
+> 🎓 OpenClassrooms • Parcours [AI Engineer](https://openclassrooms.com/fr/paths/795-ai-engineer) | 👋 *Étudiant* : [David Scanu](https://www.linkedin.com/in/davidscanu14/)
