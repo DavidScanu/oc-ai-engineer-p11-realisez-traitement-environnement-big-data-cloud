@@ -1,6 +1,6 @@
 #!/bin/bash
 # Script pour télécharger les résultats de l'Étape 2 depuis S3
-# Sauvegarde dans: traitement/etape_2/output/
+# Sauvegarde dans: traitement/etape_2/outputs/output-{mode}/
 
 set -e  # Arrêter en cas d'erreur
 
@@ -8,13 +8,30 @@ set -e  # Arrêter en cas d'erreur
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../config/config.sh"
 
+# Déterminer le mode
+if [ -n "$1" ]; then
+    MODE="$1"
+else
+    # Lire depuis mode.txt si pas d'argument
+    if [ -f "${SCRIPT_DIR}/../mode.txt" ]; then
+        MODE=$(cat "${SCRIPT_DIR}/../mode.txt")
+    else
+        MODE="mini"
+        echo "⚠️  Aucun mode spécifié, utilisation du mode par défaut: mini"
+    fi
+fi
+
+# Définir le chemin de sortie selon le mode
+set_output_path "${MODE}"
+
 # Créer le dossier output local s'il n'existe pas
-LOCAL_OUTPUT="${SCRIPT_DIR}/../output"
+LOCAL_OUTPUT="${SCRIPT_DIR}/../outputs/output-${MODE}"
 mkdir -p "${LOCAL_OUTPUT}"
 
 echo "=================================================="
 echo "📥 TÉLÉCHARGEMENT DES RÉSULTATS - ÉTAPE 2"
 echo "=================================================="
+echo "🎯 Mode: ${MODE}"
 echo "☁️  Source S3: ${S3_DATA_OUTPUT}"
 echo "💾 Destination: ${LOCAL_OUTPUT}"
 echo ""

@@ -8,13 +8,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../config/config.sh"
 
 # Vérifier que le cluster existe
-if [ ! -f "${SCRIPT_DIR}/../cluster_id.txt" ]; then
+# Chercher d'abord à la racine (ancienne localisation) puis dans outputs/
+if [ -f "${SCRIPT_DIR}/../cluster_id.txt" ]; then
+    CLUSTER_ID=$(cat "${SCRIPT_DIR}/../cluster_id.txt")
+elif [ -f "${SCRIPT_DIR}/../outputs/output-mini/cluster_id.txt" ]; then
+    CLUSTER_ID=$(cat "${SCRIPT_DIR}/../outputs/output-mini/cluster_id.txt")
+else
     echo "❌ Fichier cluster_id.txt introuvable"
     echo "Veuillez d'abord créer le cluster avec: ./scripts/create_cluster.sh"
     exit 1
 fi
-
-CLUSTER_ID=$(cat "${SCRIPT_DIR}/../cluster_id.txt")
 
 echo "=================================================="
 echo "🚀 SOUMISSION DU JOB PYSPARK - ÉTAPE 2"
@@ -45,6 +48,17 @@ esac
 
 echo "✅ Mode sélectionné: ${MODE}"
 echo ""
+
+# Créer le dossier de métadonnées pour ce mode
+METADATA_DIR=$(get_metadata_dir "${MODE}" "${SCRIPT_DIR}/..")
+mkdir -p "${METADATA_DIR}"
+
+# Sauvegarder le mode pour référence future
+echo "${MODE}" > "${SCRIPT_DIR}/../mode.txt"
+echo "${MODE}" > "${METADATA_DIR}/mode.txt"
+
+# Définir le chemin de sortie S3 selon le mode
+set_output_path "${MODE}"
 
 # Vérifier l'état du cluster
 echo "🔍 Vérification de l'état du cluster..."
@@ -89,7 +103,10 @@ echo "✅ JOB SOUMIS AVEC SUCCÈS"
 echo "=================================================="
 echo "📋 Step ID: ${STEP_ID}"
 echo ""
-echo "💾 Step ID sauvegardé dans: step_id.txt"
+echo "💾 Métadonnées sauvegardées dans: ${METADATA_DIR}/"
+echo "${STEP_ID}" > "${METADATA_DIR}/step_id.txt"
+echo "${CLUSTER_ID}" > "${METADATA_DIR}/cluster_id.txt"
+# Copier aussi à la racine pour compatibilité
 echo "${STEP_ID}" > "${SCRIPT_DIR}/../step_id.txt"
 echo ""
 echo "🔍 Surveiller l'exécution:"

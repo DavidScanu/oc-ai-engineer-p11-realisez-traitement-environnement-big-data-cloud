@@ -90,26 +90,27 @@ Ce projet a été développé en plusieurs étapes pour migrer progressivement l
   - Extraction de 1280 features par image
 - 📉 **Réduction PCA** :
   - PCA avec MLlib (1280 → 50 dimensions)
-  - Variance conservée : **92.93%**
+  - Variance conservée : **83-93%** (selon le mode)
   - Sauvegarde du modèle PCA pour réutilisation
 - 📦 **Optimisations appliquées** :
   - Broadcast TensorFlow : -90% transferts réseau
   - Pandas UDF + Apache Arrow : 10-100× plus rapide
   - Parquet : -50% stockage vs CSV
   - Auto-terminaison cluster (4h idle timeout)
-- 🎯 **Résultats validés** (mode MINI - 300 images) :
-  - Durée : 3min 34s
-  - Débit : ~84 images/min
-  - Coût : ~0.50€
-  - Scalabilité estimée (FULL - 67,000 images) : ~2-3h, ~1.60€
+- 🎯 **Modes de traitement validés** :
+  - **MINI** (300 images) : 3min 34s, 92.93% variance, ~0.50€
+  - **APPLES** (6,404 images) : ~20-25 min, 83.40% variance, ~0.40€
+  - **FULL** (67,000 images) : ~2-3h estimé, ~1.60€
 
 **Documentation complète** : [traitement/etape_2/](traitement/etape_2/)
 
 **Quickstart** : [traitement/etape_2/QUICKSTART.md](traitement/etape_2/QUICKSTART.md)
 
-**Résultats détaillés** : [traitement/etape_2/docs/RESULTATS.md](traitement/etape_2/docs/RESULTATS.md)
+**Résultats** :
+- [MINI](traitement/etape_2/outputs/output-mini/RESULTATS-MINI.md) | [Notebook](traitement/etape_2/outputs/output-mini/resultats-mini.ipynb)
+- [APPLES](traitement/etape_2/outputs/output-apples/RESULTATS-APPLES.md) | [Notebook](traitement/etape_2/outputs/output-apples/resultats-apples.ipynb)
 
-> 🚀 **Accomplissement majeur** : Pipeline production-ready avec toutes les optimisations Big Data (broadcast, UDF, Parquet) et conformité GDPR.
+> 🚀 **Accomplissement majeur** : Pipeline production-ready avec support multi-mode, toutes les optimisations Big Data et conformité GDPR.
 
 ---
 

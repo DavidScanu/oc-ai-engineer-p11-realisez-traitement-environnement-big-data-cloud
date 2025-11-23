@@ -14,10 +14,33 @@ export S3_BUCKET="oc-p11-fruits-david-scanu"
 
 # Chemins S3
 export S3_DATA_INPUT="s3://${S3_BUCKET}/data/raw/"
-export S3_DATA_OUTPUT="s3://${S3_BUCKET}/process_fruits_data/output/"
+export S3_DATA_OUTPUT_BASE="s3://${S3_BUCKET}/process_fruits_data/outputs/"
 export S3_LOGS="s3://${S3_BUCKET}/process_fruits_data/logs/emr/"
 export S3_SCRIPTS="s3://${S3_BUCKET}/process_fruits_data/scripts/"
 export S3_CONFIG="s3://${S3_BUCKET}/process_fruits_data/config/"
+
+# Fonction pour définir le chemin de sortie selon le mode
+set_output_path() {
+    local mode=$1
+    export S3_DATA_OUTPUT="${S3_DATA_OUTPUT_BASE}output-${mode}/"
+}
+
+# Fonction pour obtenir le répertoire de métadonnées selon le mode
+get_metadata_dir() {
+    local mode=${1:-}
+    local script_dir=${2:-$(pwd)}
+
+    # Si le mode n'est pas fourni, essayer de le lire depuis mode.txt
+    if [ -z "$mode" ]; then
+        if [ -f "${script_dir}/mode.txt" ]; then
+            mode=$(cat "${script_dir}/mode.txt")
+        else
+            mode="${DEFAULT_MODE}"
+        fi
+    fi
+
+    echo "${script_dir}/outputs/output-${mode}"
+}
 
 # ==========================================
 # CONFIGURATION EMR CLUSTER

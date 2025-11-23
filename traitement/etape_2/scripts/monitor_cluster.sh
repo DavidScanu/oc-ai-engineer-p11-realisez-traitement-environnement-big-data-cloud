@@ -67,8 +67,16 @@ while true; do
             echo "   https://${AWS_REGION}.console.aws.amazon.com/emr/home?region=${AWS_REGION}#/clusters/${CLUSTER_ID}"
             echo "=================================================="
 
-            # Sauvegarder le Master DNS
+            # Sauvegarder le Master DNS (à la racine pour compatibilité)
             echo "${MASTER_DNS}" > "${SCRIPT_DIR}/../master_dns.txt"
+
+            # Sauvegarder aussi dans le dossier de métadonnées si mode.txt existe
+            if [ -f "${SCRIPT_DIR}/../mode.txt" ]; then
+                MODE=$(cat "${SCRIPT_DIR}/../mode.txt")
+                METADATA_DIR=$(get_metadata_dir "${MODE}" "${SCRIPT_DIR}/..")
+                mkdir -p "${METADATA_DIR}"
+                echo "${MASTER_DNS}" > "${METADATA_DIR}/master_dns.txt"
+            fi
 
             exit 0
             ;;
