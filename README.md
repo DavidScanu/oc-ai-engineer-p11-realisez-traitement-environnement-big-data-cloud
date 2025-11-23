@@ -20,14 +20,35 @@
 
 Projet de mise en place d'une **architecture Big Data dans le cloud** pour le traitement d'images de fruits. Développé pour **"Fruits!"**, une start-up AgriTech qui développe des robots cueilleurs intelligents pour préserver la biodiversité des fruits.
 
-Ce projet implémente un **pipeline PySpark distribué** sur AWS EMR pour :
+Ce projet implémente un **pipeline PySpark distribué dans le cloud** sur **AWS EMR** pour :
 - Extraire des features d'images avec **MobileNetV2** (Transfer Learning)
 - Réduire les dimensions avec **PCA** (1280 → 50 composantes)
 - Traiter jusqu'à **~67,000 images** en mode distribué
 
 ---
 
-## 📖 Étapes réalisées
+## 📊 Jeu de données
+
+**Fruits-360 Dataset**
+
+- **Créateur** : Mihai Oltean (2017-)
+- **Taille** : 155,491 images réparties en 226 classes (version 100x100)
+- **Format** : JPG, 100x100 pixels (standardisé)
+- **Contenu** : Fruits, légumes, noix et graines avec de multiples variétés
+  - 29 types de pommes
+  - 12 variétés de cerises
+  - 19 types de tomates
+  - Et bien d'autres...
+- **Méthode de capture** : Images capturées par rotation (20s à 3 rpm) sur fond blanc
+- **Licence** : CC BY-SA 4.0
+
+**Sources** :
+- [Kaggle](https://www.kaggle.com/datasets/moltean/fruits)
+- [Téléchargement direct](https://s3.eu-west-1.amazonaws.com/course.oc-static.com/projects/Data_Scientist_P8/fruits.zip)
+
+---
+
+## 📖 Étapes du projet
 
 Ce projet a été développé en plusieurs étapes pour migrer progressivement le traitement des données du local vers le cloud AWS EMR.
 
@@ -35,8 +56,8 @@ Ce projet a été développé en plusieurs étapes pour migrer progressivement l
 
 **Objectif** : Comprendre et améliorer le code de base avant la migration cloud
 
-- 📓 **Notebook local créé** : [p11-david-scanu-local-development.ipynb](notebooks/p11-david-scanu-local-development.ipynb)
-- ✅ **Analyse du travail de l'alternant** : Étude du notebook PySpark existant ([notebooks/alternant/](notebooks/alternant/))
+- 📓 **Notebook local fonctionnel créé** : [p11-david-scanu-local-development.ipynb](notebooks/p11-david-scanu-local-development.ipynb)
+- ✅ **Analyse du travail de l'alternant** : Étude du notebook PySpark existant : [P8_Notebook_Linux_EMR_PySpark_V1.0.ipynb](notebooks/alternant/P8_Notebook_Linux_EMR_PySpark_V1.0.ipynb)
 - ✅ **Corrections et améliorations** :
   - Ajout du broadcast des poids TensorFlow (absent dans le notebook de l'alternant)
   - Implémentation de la réduction PCA avec MLlib (manquante)
@@ -50,38 +71,38 @@ Ce projet a été développé en plusieurs étapes pour migrer progressivement l
 
 ### ✅ Étape 1 : Validation de l'infrastructure cloud
 
-**Objectif** : Mettre en place et tester le cluster EMR avec un pipeline simple
+**Objectif** : Valider la lecture/écriture S3 et tester le cluster EMR avec un pipeline simple
 
-- 🏗️ **Infrastructure AWS déployée** :
-  - Création du cluster EMR (Master + 2 Core nodes)
-  - Configuration S3 (bucket, IAM roles, security groups)
-  - Scripts d'automatisation bash (11 scripts)
-  - Bootstrap action pour installer les dépendances Python
 - ✅ **Pipeline de test** :
   - Lecture de ~67,000 images depuis S3
   - Extraction des métadonnées (path, label, classe)
   - Calcul de statistiques par classe
   - Écriture des résultats sur S3 (CSV)
+- 🏗️ **Infrastructure AWS déployée** :
+  - Création du cluster EMR (Master + 2 Core nodes)
+  - Configuration S3 (bucket, IAM roles, security groups)
+  - Scripts d'automatisation bash (11 scripts)
+  - Bootstrap action pour installer les dépendances Python
 - 🎯 **Validation** :
   - ✅ Lecture/écriture S3 fonctionnelle
   - ✅ PySpark distribué opérationnel
   - ✅ Bootstrap action testée
   - ✅ Gestion des coûts (auto-terminaison)
 
-**Documentation** : [traitement/etape_1/](traitement/etape_1/)
-
 **Résultats** :
 - Durée : ~2-5 min (67,000 images)
-- Coût : ~0.05€
 - Output : Métadonnées + statistiques CSV
+- Coût : ~0.05€
 
 > 💡 **Importance** : Cette étape a validé l'infrastructure AWS avant d'ajouter la complexité du traitement TensorFlow + PCA.
+
+**Documentation** : [traitement/etape_1/docs](traitement/etape_1/docs)
 
 ---
 
 ### 🎯 Étape 2 : Pipeline complet Feature Extraction + PCA
 
-**Objectif** : Implémenter le pipeline big data complet avec TensorFlow et réduction de dimensions
+**Objectif** : Implémenter le **pipeline big data complet** avec TensorFlow et réduction de dimensions PCA
 
 - 🧠 **Feature Extraction** :
   - MobileNetV2 pré-entraîné (Transfer Learning)
@@ -92,55 +113,127 @@ Ce projet a été développé en plusieurs étapes pour migrer progressivement l
   - PCA avec MLlib (1280 → 50 dimensions)
   - Variance conservée : **83-93%** (selon le mode)
   - Sauvegarde du modèle PCA pour réutilisation
-- 📦 **Optimisations appliquées** :
-  - Broadcast TensorFlow : -90% transferts réseau
-  - Pandas UDF + Apache Arrow : 10-100× plus rapide
-  - Parquet : -50% stockage vs CSV
-  - Auto-terminaison cluster (4h idle timeout)
 - 🎯 **Modes de traitement validés** :
   - **MINI** (300 images) : 3min 34s, 92.93% variance, ~0.50€
   - **APPLES** (6,404 images) : ~20-25 min, 83.40% variance, ~0.40€
   - **FULL** (67,000 images) : ~2-3h estimé, ~1.60€
 
-**Documentation complète** : [traitement/etape_2/](traitement/etape_2/)
+#### Architecture du pipeline
 
-**Quickstart** : [traitement/etape_2/QUICKSTART.md](traitement/etape_2/QUICKSTART.md)
+```
+Images S3 (JPG)
+    │
+    ├─> [1] Chargement (binaryFile)
+    │
+    ├─> [2] MobileNetV2 Feature Extraction
+    │       • Broadcast des poids (~14 MB)
+    │       • Pandas UDF (traitement distribué)
+    │       • Output: 1280 features par image
+    │
+    ├─> [3] PCA (MLlib)
+    │       • Réduction: 1280 → 50 dimensions
+    │       • Variance conservée: 92.93%
+    │
+    └─> [4] Sauvegarde S3 (Parquet + CSV)
+            • features/ (1280D)
+            • pca/ (50D)
+            • metadata/ (labels)
+            • model_info/ (variance)
+```
 
-**Résultats** :
-- [MINI](traitement/etape_2/outputs/output-mini/RESULTATS-MINI.md) | [Notebook](traitement/etape_2/outputs/output-mini/resultats-mini.ipynb)
-- [APPLES](traitement/etape_2/outputs/output-apples/RESULTATS-APPLES.md) | [Notebook](traitement/etape_2/outputs/output-apples/resultats-apples.ipynb)
+#### Optimisations appliquées
 
-> 🚀 **Accomplissement majeur** : Pipeline production-ready avec support multi-mode, toutes les optimisations Big Data et conformité GDPR.
+- ✅ **Broadcast TensorFlow** : -90% transferts réseau
+- ✅ **Pandas UDF + Arrow** : 10-100× plus rapide
+- ✅ **Parquet** : -50% stockage vs CSV
+- ✅ **PCA 50D** : -96% dimensions (1280 → 50)
+
+#### Documentation 
+
+- **Documentation complète** : [traitement/etape_2/docs](traitement/etape_2/docs)
+- **Quickstart** : [QUICKSTART.md](traitement/etape_2/QUICKSTART.md)
+- **Readme** : [README.md](traitement/etape_2/docs/README.md)
+- **Workflow** : [WORKFLOW.md](traitement/etape_2/docs/WORKFLOW.md)
+- **Architecture** : [ARCHITECTURE.md](traitement/etape_2/docs/ARCHITECTURE.md)
 
 ---
 
-### 📊 Étape 3 : Documentation et livrables
+## Résultats validés
 
-**Objectif** : Documenter l'architecture, les workflows et les résultats pour faciliter la maintenance
+### 🎯 Démarche incrémentale
 
-- 📚 **Documentation technique** :
-  - Architecture AWS (diagrammes, composants)
-  - Workflows détaillés (création cluster, soumission jobs)
-  - Scripts d'automatisation documentés
-  - Guide de démarrage rapide (QUICKSTART.md)
-- 📈 **Résultats et analyses** :
-  - Rapport de performance (temps, coûts, débit)
-  - Analyse de variance PCA
-  - Scalabilité estimée
-  - Recommandations d'optimisation
-- 🛠️ **Outils de gestion** :
-  - Scripts d'audit AWS ([scripts/aws_audit.sh](scripts/aws_audit.sh))
-  - Monitoring des coûts
-  - Procédures de nettoyage
+Le pipeline a été validé avec une approche progressive en 3 modes :
 
-**Livrables finaux** :
-- ✅ Code PySpark production-ready
-- ✅ 11 scripts bash d'automatisation
-- ✅ 4 documents techniques détaillés
-- ✅ Données S3 (images + résultats PCA)
-- ✅ Architecture GDPR-compliant
+- **MINI** (300 images) : Validation rapide du pipeline (~3-5 min, ~0.50€)
+- **APPLES** (6,404 images) : Test sur un sous-ensemble homogène (~20-25 min, ~0.40€)
+- **FULL** (67,000 images) : Production complète avec tous les fruits (~2-3h, ~1.60€)
 
-> 📖 **Documentation exhaustive** pour faciliter la reprise du projet et la mise en production.
+Cette démarche permet de :
+- Valider rapidement les modifications (mode MINI)
+- Tester la scalabilité sur des données réelles (mode APPLES)
+- Passer en production en toute confiance (mode FULL)
+
+### 📦 Outputs générés
+
+Le pipeline PySpark génère plusieurs types de fichiers structurés :
+
+```
+s3://oc-p11-fruits-david-scanu/process_fruits_data/outputs/output-{mode}/
+├── features/          # Features brutes (1280D) - MobileNetV2
+│   ├── parquet/       # Format optimisé pour Spark
+│   └── csv/           # Format lisible
+├── pca/               # Features réduites (50D) - PCA
+│   ├── parquet/       # Compression ~92-96% vs features brutes
+│   └── csv/
+├── metadata/          # Chemins S3 + labels des images
+├── model_info/        # Informations PCA et variance par composante
+│   ├── model_info_*   # JSON avec variance totale et config
+│   └── variance_*     # CSV avec variance de chaque composante
+└── errors/            # Log des erreurs (absent si 100% succès)
+```
+
+**Tailles typiques** :
+- **MINI** : ~6.4 MB total (features: 5.9 MB, pca: 456 KB)
+- **APPLES** : ~125-145 MB total (features: 115-130 MB, pca: 8-10 MB)
+- **FULL** : Estimé ~1.5-1.8 GB total
+
+### 💾 Téléchargement des résultats
+
+Pour récupérer les résultats en local :
+
+```bash
+cd traitement/etape_2
+./scripts/download_results.sh [mode]
+```
+
+**Exemples** :
+```bash
+./scripts/download_results.sh mini     # Télécharge résultats MINI
+./scripts/download_results.sh apples   # Télécharge résultats APPLES
+./scripts/download_results.sh          # Utilise le dernier mode exécuté
+```
+
+Les résultats sont sauvegardés dans `traitement/etape_2/outputs/output-{mode}/` avec la même structure qu'en S3.
+
+### 📊 Comparaison des modes
+
+| Métrique | MINI | APPLES | FULL |
+|----------|------|--------|------|
+| **Images traitées** | 300 (100%) | 6,404 (100%) | ~67,000 |
+| **Temps d'exécution** | 3min 34s | ~20-25 min | ~2-3h |
+| **Débit** | ~84 img/min | ~260-320 img/min | ~350-560 img/min |
+| **Variance PCA (50 comp.)** | **92.93%** | **83.40%** | - |
+| **Taux d'erreur** | 0% | 0% | - |
+| **Coût estimé** | ~0.50€ | ~0.40€ | ~1.60€ |
+| **Documentation des résultats** | [MINI](traitement/etape_2/outputs/output-mini/RESULTATS-MINI.md) | [APPLES](traitement/etape_2/outputs/output-apples/RESULTATS-APPLES.md) | - |
+| **Notebook** | [Notebook](traitement/etape_2/outputs/output-mini/resultats-mini.ipynb) | [Notebook](traitement/etape_2/outputs/output-apples/resultats-apples.ipynb) | - |
+
+**Observations** :
+- Le débit augmente significativement avec la taille du dataset (meilleur parallélisme)
+- La variance PCA est plus faible sur APPLES car toutes les variétés de pommes augmentent la variabilité naturelle
+- Excellente scalabilité : 21× plus d'images mais seulement 5-7× plus de temps
+
+> 🚀 **Accomplissement majeur** : Pipeline production-ready avec support multi-mode, toutes les optimisations Big Data et conformité GDPR.
 
 ---
 
@@ -181,16 +274,16 @@ oc-ai-engineer-p11-realisez-traitement-environnement-big-data-cloud/
 │       ├── config/                # Configuration (m5.2xlarge, PCA 50)
 │       ├── scripts/               # 11 scripts bash + process_fruits_data.py
 │       ├── docs/                  # README, WORKFLOW, ARCHITECTURE, RESULTATS
-│       ├── output/                # Résultats téléchargés (local)
+│       ├── outputs/               # Résultats téléchargés (local)
 │       ├── logs/                  # Logs EMR téléchargés (local)
 │       └── QUICKSTART.md          # Démarrage rapide
 │
 ├── notebooks/                     # Notebooks de développement local
-│   ├── p11-emr-fruits-pca.ipynb  # Notebook fonctionnel (base étape 2)
-│   └── alternant/                # Travail de l'alternant (référence)
+│   ├── p11-emr-fruits-pca.ipynb   # Notebook fonctionnel (base étape 2)
+│   └── alternant/                 # Travail de l'alternant (référence)
 │
 ├── scripts/                       # Scripts utilitaires
-│   └── aws_audit.sh              # Audit coûts AWS
+│   └── aws_audit.sh               # Audit coûts AWS
 │
 └── README.md                      # Ce fichier
 ```
@@ -200,137 +293,65 @@ oc-ai-engineer-p11-realisez-traitement-environnement-big-data-cloud/
 | Dossier | Description | Liens |
 |---------|-------------|-------|
 | **[traitement/etape_1/](traitement/etape_1/)** | Pipeline de lecture S3 (validation) | [README](traitement/etape_1/docs/README.md) |
-| **[traitement/etape_2/](traitement/etape_2/)** | Pipeline MobileNetV2 + PCA ⭐ | [README](traitement/etape_2/docs/README.md) • [QUICKSTART](traitement/etape_2/QUICKSTART.md) • [RÉSULTATS](traitement/etape_2/docs/RESULTATS.md) |
+| **[traitement/etape_2/](traitement/etape_2/)** | Pipeline MobileNetV2 + PCA ⭐ | [README](traitement/etape_2/docs/README.md) • [QUICKSTART](traitement/etape_2/QUICKSTART.md) |
 | **[notebooks/](notebooks/)** | Dev local + référence alternant | [Notebook PCA](notebooks/p11-emr-fruits-pca.ipynb) |
 
 ---
 
-## 🚀 Pipeline réalisé
-
-### Étape 1 : Validation de l'infrastructure ✅
-
-**Objectif** : Valider la lecture/écriture S3 et l'infrastructure EMR
-
-- ✅ Lecture de ~67,000 images depuis S3
-- ✅ Extraction des métadonnées (path, label, classe)
-- ✅ Statistiques par classe
-- ✅ Écriture des résultats sur S3
-
-**Documentation** : [traitement/etape_1/](traitement/etape_1/)
-
-**Résultats** :
-- Durée : ~2-5 min (67,000 images)
-- Output : Métadonnées + statistiques CSV
-- Coût : ~0.05€
-
----
-
-### Étape 2 : Feature Extraction + PCA ⭐
-
-**Objectif** : Pipeline big data complet avec TensorFlow et PCA
-
-#### Architecture du pipeline
-
-```
-Images S3 (JPG)
-    │
-    ├─> [1] Chargement (binaryFile)
-    │
-    ├─> [2] MobileNetV2 Feature Extraction
-    │       • Broadcast des poids (~14 MB)
-    │       • Pandas UDF (traitement distribué)
-    │       • Output: 1280 features par image
-    │
-    ├─> [3] PCA (MLlib)
-    │       • Réduction: 1280 → 50 dimensions
-    │       • Variance conservée: 92.93%
-    │
-    └─> [4] Sauvegarde S3 (Parquet + CSV)
-            • features/ (1280D)
-            • pca/ (50D)
-            • metadata/ (labels)
-            • model_info/ (variance)
-```
-
-#### Résultats validés (Mode MINI - 300 images)
-
-| Métrique | Valeur |
-|----------|--------|
-| **Images traitées** | 300 (100%) |
-| **Temps d'exécution** | 3min 34s |
-| **Débit** | ~84 images/min |
-| **Variance PCA (50 comp.)** | **92.93%** |
-| **Taux d'erreur** | 0% |
-| **Coût** | ~0.50€ |
-
-#### Optimisations appliquées
-
-- ✅ **Broadcast TensorFlow** : -90% transferts réseau
-- ✅ **Pandas UDF + Arrow** : 10-100× plus rapide
-- ✅ **Parquet** : -50% stockage vs CSV
-- ✅ **PCA 50D** : -96% dimensions (1280 → 50)
-
-#### Scalabilité estimée
-
-| Mode | Images | Durée | Coût |
-|------|--------|-------|------|
-| MINI | 300 | 3min34s | 0.50€ |
-| APPLES | 6,400 | ~20min | 0.40€ |
-| **FULL** | **67,000** | **~2-3h** | **~1.60€** |
-
-**Documentation complète** : [traitement/etape_2/](traitement/etape_2/)
-
-**Quickstart** : [traitement/etape_2/QUICKSTART.md](traitement/etape_2/QUICKSTART.md)
-
-**Résultats détaillés** : [traitement/etape_2/docs/RESULTATS.md](traitement/etape_2/docs/RESULTATS.md)
-
----
-
-## 🎯 Livrables
+## 🎯 Livrables finaux
 
 ### ✅ Code & Scripts
 
 | Livrable | Localisation | Description |
 |----------|--------------|-------------|
-| **Pipeline PySpark** | [process_fruits_data.py](traitement/etape_2/scripts/process_fruits_data.py) | Script principal (MobileNetV2 + PCA) |
+| **Notebook local corrigé et fonctionnel** | [p11-david-scanu-local-development.ipynb](notebooks/p11-david-scanu-local-development.ipynb) | Développement local du pipeline PySpark avec broadcast TensorFlow et PCA | 
+| **Script PySpark** | [process_fruits_data.py](traitement/etape_2/scripts/process_fruits_data.py) | Pipeline PySpark production-ready (MobileNetV2 + PCA) |
 | **Bootstrap EMR** | [install_dependencies.sh](traitement/etape_2/scripts/install_dependencies.sh) | Installation TensorFlow, scikit-learn |
 | **Scripts automatisation** | [traitement/etape_2/scripts/](traitement/etape_2/scripts/) | 11 scripts bash (create, monitor, submit, etc.) |
 | **Configuration** | [config.sh](traitement/etape_2/config/config.sh) | Config centralisée (EMR, Spark, S3) |
 
-### ✅ Documentation
+### 📦 Stockage S3
 
-| Document | Lien | Contenu |
-|----------|------|---------|
-| **README Étape 2** | [traitement/etape_2/docs/README.md](traitement/etape_2/docs/README.md) | Documentation complète |
-| **Quickstart** | [traitement/etape_2/QUICKSTART.md](traitement/etape_2/QUICKSTART.md) | Démarrage en 7 commandes |
-| **Workflow** | [traitement/etape_2/docs/WORKFLOW.md](traitement/etape_2/docs/WORKFLOW.md) | Procédure détaillée |
-| **Architecture** | [traitement/etape_2/docs/ARCHITECTURE.md](traitement/etape_2/docs/ARCHITECTURE.md) | Architecture technique |
-| **Résultats** | [traitement/etape_2/docs/RESULTATS.md](traitement/etape_2/docs/RESULTATS.md) | Résultats validés |
-
-### ✅ Données S3
+#### Structure des données
 
 ```
 s3://oc-p11-fruits-david-scanu/
-├── data/raw/Training/           # Input: ~67,000 images
-└── process_fruits_data/output/  # Output étape 2:
-    ├── features/                # Features 1280D (5.9 MB)
-    ├── pca/                     # PCA 50D (456 KB)
-    ├── metadata/                # Labels (36 KB)
-    └── model_info/              # Variance PCA (64 KB)
+│
+├── data/raw/Training/            # Images source (67,000 images)
+│   ├── Apple Braeburn/
+│   │   ├── 0_100.jpg
+│   │   ├── 1_100.jpg
+│   │   └── ...
+│   ├── Banana/
+│   └── ... (224 classes)
+│
+├── read_fruits_data/              # Outputs Étape 1
+│   ├── scripts/                   # Scripts uploadés
+│   ├── logs/emr/                  # Logs EMR
+│   └── output/etape_1/            # Métadonnées + stats
+│
+└── process_fruits_data/           # Outputs Étape 2 ⭐
+    ├── scripts/                   # Scripts uploadés
+    ├── logs/emr/                  # Logs EMR
+    └── outputs/                   # Résultats (features, PCA, etc.)
+        ├── output-mini/
+        ├── output-apples/
+        └── output-full/
+            ├── features/          # Features 1280D
+            ├── pca/               # PCA 50D
+            ├── metadata/          # Labels
+            └── model_info/        # Variance PCA
 ```
 
----
+#### Exemples de chemins
 
-## 💰 Coûts AWS (réels)
+- **Image** : `s3://oc-p11-fruits-david-scanu/data/raw/Training/Apple Braeburn/0_100.jpg`
+- **Features** : `s3://oc-p11-fruits-david-scanu/process_fruits_data/outputs/output-full/features/`
+- **PCA** : `s3://oc-p11-fruits-david-scanu/process_fruits_data/outputs/output-full/pca/`
 
-| Phase | Durée | Coût |
-|-------|-------|------|
-| **Étape 1** (validation) | ~5 min | ~0.05€ |
-| **Étape 2 (MINI)** | ~30 min | ~0.50€ |
-| **Étape 2 (FULL)** | ~2-3h | ~1.60€ |
-| **TOTAL projet** | - | **< 3€** |
+### Architecture GDPR-compliant
 
-**Auto-terminaison** : 4h idle timeout (sécurité anti-coûts)
+- Région `eu-west-1` 
 
 ---
 
@@ -369,69 +390,24 @@ cd traitement/etape_2
 ./scripts/terminate_cluster.sh
 ```
 
-**Détails** : [traitement/etape_2/QUICKSTART.md](traitement/etape_2/QUICKSTART.md)
+**Détails** : [QUICKSTART.md](traitement/etape_2/docs/QUICKSTART.md)
 
 > ⚠️ **Gestion des coûts** : Toujours terminer le cluster après usage !
 
-## 📊 Jeu de données
-
-**Fruits-360 Dataset**
-
-- **Créateur** : Mihai Oltean (2017-)
-- **Taille** : 155,491 images réparties en 226 classes (version 100x100)
-- **Format** : JPG, 100x100 pixels (standardisé)
-- **Contenu** : Fruits, légumes, noix et graines avec de multiples variétés
-  - 29 types de pommes
-  - 12 variétés de cerises
-  - 19 types de tomates
-  - Et bien d'autres...
-- **Méthode de capture** : Images capturées par rotation (20s à 3 rpm) sur fond blanc
-- **Licence** : CC BY-SA 4.0
-
-**Sources** :
-- [Kaggle](https://www.kaggle.com/datasets/moltean/fruits)
-- [Téléchargement direct](https://s3.eu-west-1.amazonaws.com/course.oc-static.com/projects/Data_Scientist_P8/fruits.zip)
-
-
 ---
 
-## 📦 Stockage S3
+## 💰 Coûts AWS (réels)
 
-### Structure des données
+| Phase | Durée | Coût |
+|-------|-------|------|
+| **Étape 1** (validation) | ~5 min | ~0.05€ |
+| **Étape 2 (MINI)** | ~30 min | ~0.50€ |
+| **Étape 2 (FULL)** | ~2-3h | ~1.60€ |
+| **TOTAL projet** | - | **< 3€** |
 
-```
-s3://oc-p11-fruits-david-scanu/
-│
-├── data/raw/Training/                 # Images source (67,000 images)
-│   ├── Apple Braeburn/
-│   │   ├── 0_100.jpg
-│   │   ├── 1_100.jpg
-│   │   └── ...
-│   ├── Banana/
-│   └── ... (224 classes)
-│
-├── read_fruits_data/                  # Outputs Étape 1
-│   ├── scripts/                       # Scripts uploadés
-│   ├── logs/emr/                      # Logs EMR
-│   └── output/etape_1/                # Métadonnées + stats
-│
-└── process_fruits_data/               # Outputs Étape 2 ⭐
-    ├── scripts/                       # Scripts uploadés
-    ├── logs/emr/                      # Logs EMR
-    └── output/                        # Résultats (features, PCA, etc.)
-        ├── features/
-        ├── pca/
-        ├── metadata/
-        └── model_info/
-```
+**Auto-terminaison** : 4h idle timeout (sécurité anti-coûts)
 
-### Exemples de chemins
-
-- **Image** : `s3://oc-p11-fruits-david-scanu/data/raw/Training/Apple Braeburn/0_100.jpg`
-- **Features** : `s3://oc-p11-fruits-david-scanu/process_fruits_data/output/features/`
-- **PCA** : `s3://oc-p11-fruits-david-scanu/process_fruits_data/output/pca/`
-
-## Audit des coûts AWS 
+### Script d'audit des coûts AWS 
 
 Un script d'audit rapide est disponible pour lister les ressources AWS susceptibles d'engendrer des coûts (instances EC2 actives, volumes EBS, Elastic IP, buckets S3, NAT Gateway, RDS, EMR, etc.). Le script est non-destructif : il se contente de lister et résumer les ressources.
 
@@ -485,6 +461,13 @@ aws ce get-cost-and-usage \
 | **Quickstart** | [traitement/etape_2/QUICKSTART.md](traitement/etape_2/QUICKSTART.md) |
 | **Résultats validés** | [traitement/etape_2/docs/RESULTATS.md](traitement/etape_2/docs/RESULTATS.md) |
 
+| Document | Lien | Contenu |
+|----------|------|---------|
+| **README Étape 2** | [README.md](traitement/etape_2/docs/README.md) | Documentation complète |
+| **Quickstart** | [QUICKSTART.md](traitement/etape_2/docs/QUICKSTART.md) | Démarrage en 7 commandes |
+| **Workflow** | [WORKFLOW.md](traitement/etape_2/docs/WORKFLOW.md) | Procédure détaillée |
+| **Architecture** | [ARCHITECTURE.md](traitement/etape_2/docs/ARCHITECTURE.md) | Architecture technique |
+
 ### Références externes
 
 - [AWS EMR Getting Started](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-gs.html)
@@ -497,7 +480,7 @@ aws ce get-cost-and-usage \
 ## 📅 Dates
 
 - **Début** : 24 Octobre 2025
-- **Étape 1 validée** : Novembre 2025
+- **Étape 1 validée** : 13 Novembre 2025
 - **Étape 2 validée** : 21 Novembre 2025
 
 ---
