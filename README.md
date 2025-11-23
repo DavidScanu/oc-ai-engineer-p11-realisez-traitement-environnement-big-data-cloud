@@ -12,6 +12,10 @@
 
 ---
 
+<p align="center">
+  <img src="images/p11-cover-large-01.jpg" alt="Couverture : Pipeline Big Data Fruits - MobileNetV2 + PCA" style="max-width:100%;height:auto;">
+</p>
+
 ## 📋 Description
 
 Projet de mise en place d'une **architecture Big Data dans le cloud** pour le traitement d'images de fruits. Développé pour **"Fruits!"**, une start-up AgriTech qui développe des robots cueilleurs intelligents pour préserver la biodiversité des fruits.
