@@ -224,6 +224,7 @@ cluster_id.txt
 create_cluster_output.txt
 master_dns.txt
 step_id.txt
+mode.txt
 
 # clé privée SSH (private + optional public)
 .ssh/emr-p11-fruits-key
@@ -234,3 +235,9 @@ step_id.txt
 
 # Logs
 logs/
+
+# Traitement en mode "full"
+traitement/etape_2/outputs/output-full/features
+traitement/etape_2/outputs/output-full/metadata
+traitement/etape_2/outputs/output-full/model_info
+traitement/etape_2/outputs/output-full/pca

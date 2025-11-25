@@ -116,7 +116,7 @@ Ce projet a été développé en plusieurs étapes pour migrer progressivement l
 - 🎯 **Modes de traitement validés** :
   - **MINI** (300 images) : 3min 34s, 92.93% variance, ~0.50€
   - **APPLES** (6,404 images) : ~20-25 min, 83.40% variance, ~0.40€
-  - **FULL** (67,000 images) : ~2-3h estimé, ~1.60€
+  - **FULL** (67,692 images) : 83 min (1h23), 71.88% variance, ~1.60€ ✅
 
 #### Architecture du pipeline
 
@@ -195,7 +195,7 @@ s3://oc-p11-fruits-david-scanu/process_fruits_data/outputs/output-{mode}/
 **Tailles typiques** :
 - **MINI** : ~6.4 MB total (features: 5.9 MB, pca: 456 KB)
 - **APPLES** : ~125-145 MB total (features: 115-130 MB, pca: 8-10 MB)
-- **FULL** : Estimé ~1.5-1.8 GB total
+- **FULL** : ~1.7-2.0 GB total (features: 1.5-1.8 GB, pca: 150-200 MB) ✅
 
 ### 💾 Téléchargement des résultats
 
@@ -219,19 +219,22 @@ Les résultats sont sauvegardés dans `traitement/etape_2/outputs/output-{mode}/
 
 | Métrique | MINI | APPLES | FULL |
 |----------|------|--------|------|
-| **Images traitées** | 300 (100%) | 6,404 (100%) | ~67,000 |
-| **Temps d'exécution** | 3min 34s | ~20-25 min | ~2-3h |
-| **Débit** | ~84 img/min | ~260-320 img/min | ~350-560 img/min |
-| **Variance PCA (50 comp.)** | **92.93%** | **83.40%** | - |
-| **Taux d'erreur** | 0% | 0% | - |
-| **Coût estimé** | ~0.50€ | ~0.40€ | ~1.60€ |
-| **Documentation des résultats** | [MINI](traitement/etape_2/outputs/output-mini/RESULTATS-MINI.md) | [APPLES](traitement/etape_2/outputs/output-apples/RESULTATS-APPLES.md) | - |
-| **Notebook** | [Notebook](traitement/etape_2/outputs/output-mini/resultats-mini.ipynb) | [Notebook](traitement/etape_2/outputs/output-apples/resultats-apples.ipynb) | - |
+| **Images traitées** | 300 (100%) | 6,404 (100%) | **67,692 (100%)** ✅ |
+| **Classes traitées** | ~3-5 variétés | ~29 variétés pommes | **131 classes** ✅ |
+| **Temps d'exécution** | 3min 34s | ~20-25 min | **83 min (1h23)** ✅ |
+| **Débit** | ~84 img/min | ~260-320 img/min | **~814 img/min** ✅ |
+| **Variance PCA (50 comp.)** | **92.93%** | **83.40%** | **71.88%** ✅ |
+| **Taux d'erreur** | 0% | 0% | **0%** ✅ |
+| **Coût estimé** | ~0.50€ | ~0.40€ | **~1.60€** ✅ |
+| **Documentation des résultats** | [MINI](traitement/etape_2/outputs/output-mini/RESULTATS-MINI.md) | [APPLES](traitement/etape_2/outputs/output-apples/RESULTATS-APPLES.md) | **[FULL](traitement/etape_2/outputs/output-full/RESULTATS-FULL.md)** ✅ |
+| **Notebook** | [Notebook](traitement/etape_2/outputs/output-mini/resultats-mini.ipynb) | [Notebook](traitement/etape_2/outputs/output-apples/resultats-apples.ipynb) | **[Notebook](traitement/etape_2/outputs/output-full/resultats-full.ipynb)** ✅ |
 
 **Observations** :
-- Le débit augmente significativement avec la taille du dataset (meilleur parallélisme)
-- La variance PCA est plus faible sur APPLES car toutes les variétés de pommes augmentent la variabilité naturelle
-- Excellente scalabilité : 21× plus d'images mais seulement 5-7× plus de temps
+- **Scalabilité exceptionnelle** : 226× plus d'images (vs MINI) mais seulement 23× plus de temps
+- **Débit impressionnant** : ×9.7 entre MINI et FULL grâce au parallélisme Spark
+- La variance PCA est plus faible sur FULL (71.88%) car **diversité maximale** avec 131 classes de fruits
+- **Pipeline production-ready validé** : 0 erreur sur 67,692 images en 83 minutes
+- Coût très raisonnable : ~1.60€ pour traiter l'ensemble complet du dataset
 
 > 🚀 **Accomplissement majeur** : Pipeline production-ready avec support multi-mode, toutes les optimisations Big Data et conformité GDPR.
 
@@ -402,8 +405,9 @@ cd traitement/etape_2
 |-------|-------|------|
 | **Étape 1** (validation) | ~5 min | ~0.05€ |
 | **Étape 2 (MINI)** | ~30 min | ~0.50€ |
-| **Étape 2 (FULL)** | ~2-3h | ~1.60€ |
-| **TOTAL projet** | - | **< 3€** |
+| **Étape 2 (APPLES)** | ~30 min | ~0.40€ |
+| **Étape 2 (FULL)** | ~1h40 | ~1.60€ ✅ |
+| **TOTAL projet** | - | **< 3€** ✅ |
 
 **Auto-terminaison** : 4h idle timeout (sécurité anti-coûts)
 
@@ -479,9 +483,10 @@ aws ce get-cost-and-usage \
 
 ## 📅 Dates
 
-- **Début** : 24 Octobre 2025
-- **Étape 1 validée** : 13 Novembre 2025
-- **Étape 2 validée** : 21 Novembre 2025
+- **Début** : 24 Octobre 2024
+- **Étape 1 validée** : 13 Novembre 2024
+- **Étape 2 validée** : 21 Novembre 2024
+- **Mode FULL validé** : 25 Novembre 2024 ✅
 
 ---
 
