@@ -27,6 +27,64 @@ Ce projet implémente un **pipeline PySpark distribué dans le cloud** sur **AWS
 
 ---
 
+## 🎯 Livrables finaux
+
+### ✅ Code & Scripts
+
+| Livrable | Localisation | Description |
+|----------|--------------|-------------|
+| **Notebook local corrigé et fonctionnel** | [p11-david-scanu-local-development.ipynb](notebooks/p11-david-scanu-local-development.ipynb) | Développement local du pipeline PySpark avec broadcast TensorFlow et PCA |
+| **Script PySpark** | [process_fruits_data.py](traitement/etape_2/scripts/process_fruits_data.py) | Pipeline PySpark production-ready (MobileNetV2 + PCA) |
+| **Bootstrap EMR** | [install_dependencies.sh](traitement/etape_2/scripts/install_dependencies.sh) | Installation TensorFlow, scikit-learn |
+| **Scripts automatisation** | [traitement/etape_2/scripts/](traitement/etape_2/scripts/) | 11 scripts bash (create, monitor, submit, etc.) |
+| **Configuration** | [config.sh](traitement/etape_2/config/config.sh) | Config centralisée (EMR, Spark, S3) |
+| **Présentation** | [Google Slides](https://docs.google.com/presentation/d/1YH2OK8qeV0dBRjcsCU09T9dZZ977ExN2fQvkeF7-Iv0/edit?usp=sharing) | Support de présentation du projet |
+
+### 📦 Stockage S3
+
+#### Structure des données
+
+```
+s3://oc-p11-fruits-david-scanu/
+│
+├── data/raw/Training/            # Images source (67,000 images)
+│   ├── Apple Braeburn/
+│   │   ├── 0_100.jpg
+│   │   ├── 1_100.jpg
+│   │   └── ...
+│   ├── Banana/
+│   └── ... (224 classes)
+│
+├── read_fruits_data/              # Outputs Étape 1
+│   ├── scripts/                   # Scripts uploadés
+│   ├── logs/emr/                  # Logs EMR
+│   └── output/etape_1/            # Métadonnées + stats
+│
+└── process_fruits_data/           # Outputs Étape 2 ⭐
+    ├── scripts/                   # Scripts uploadés
+    ├── logs/emr/                  # Logs EMR
+    └── outputs/                   # Résultats (features, PCA, etc.)
+        ├── output-mini/
+        ├── output-apples/
+        └── output-full/
+            ├── features/          # Features 1280D
+            ├── pca/               # PCA 50D
+            ├── metadata/          # Labels
+            └── model_info/        # Variance PCA
+```
+
+#### Exemples de chemins
+
+- **Image** : `s3://oc-p11-fruits-david-scanu/data/raw/Training/Apple Braeburn/0_100.jpg`
+- **Features** : `s3://oc-p11-fruits-david-scanu/process_fruits_data/outputs/output-full/features/`
+- **PCA** : `s3://oc-p11-fruits-david-scanu/process_fruits_data/outputs/output-full/pca/`
+
+### Architecture GDPR-compliant
+
+- Région `eu-west-1` 
+
+---
+
 ## 📊 Jeu de données
 
 **Fruits-360 Dataset**
@@ -298,63 +356,6 @@ oc-ai-engineer-p11-realisez-traitement-environnement-big-data-cloud/
 | **[traitement/etape_1/](traitement/etape_1/)** | Pipeline de lecture S3 (validation) | [README](traitement/etape_1/docs/README.md) |
 | **[traitement/etape_2/](traitement/etape_2/)** | Pipeline MobileNetV2 + PCA ⭐ | [README](traitement/etape_2/docs/README.md) • [QUICKSTART](traitement/etape_2/QUICKSTART.md) |
 | **[notebooks/](notebooks/)** | Dev local + référence alternant | [Notebook PCA](notebooks/p11-emr-fruits-pca.ipynb) |
-
----
-
-## 🎯 Livrables finaux
-
-### ✅ Code & Scripts
-
-| Livrable | Localisation | Description |
-|----------|--------------|-------------|
-| **Notebook local corrigé et fonctionnel** | [p11-david-scanu-local-development.ipynb](notebooks/p11-david-scanu-local-development.ipynb) | Développement local du pipeline PySpark avec broadcast TensorFlow et PCA | 
-| **Script PySpark** | [process_fruits_data.py](traitement/etape_2/scripts/process_fruits_data.py) | Pipeline PySpark production-ready (MobileNetV2 + PCA) |
-| **Bootstrap EMR** | [install_dependencies.sh](traitement/etape_2/scripts/install_dependencies.sh) | Installation TensorFlow, scikit-learn |
-| **Scripts automatisation** | [traitement/etape_2/scripts/](traitement/etape_2/scripts/) | 11 scripts bash (create, monitor, submit, etc.) |
-| **Configuration** | [config.sh](traitement/etape_2/config/config.sh) | Config centralisée (EMR, Spark, S3) |
-
-### 📦 Stockage S3
-
-#### Structure des données
-
-```
-s3://oc-p11-fruits-david-scanu/
-│
-├── data/raw/Training/            # Images source (67,000 images)
-│   ├── Apple Braeburn/
-│   │   ├── 0_100.jpg
-│   │   ├── 1_100.jpg
-│   │   └── ...
-│   ├── Banana/
-│   └── ... (224 classes)
-│
-├── read_fruits_data/              # Outputs Étape 1
-│   ├── scripts/                   # Scripts uploadés
-│   ├── logs/emr/                  # Logs EMR
-│   └── output/etape_1/            # Métadonnées + stats
-│
-└── process_fruits_data/           # Outputs Étape 2 ⭐
-    ├── scripts/                   # Scripts uploadés
-    ├── logs/emr/                  # Logs EMR
-    └── outputs/                   # Résultats (features, PCA, etc.)
-        ├── output-mini/
-        ├── output-apples/
-        └── output-full/
-            ├── features/          # Features 1280D
-            ├── pca/               # PCA 50D
-            ├── metadata/          # Labels
-            └── model_info/        # Variance PCA
-```
-
-#### Exemples de chemins
-
-- **Image** : `s3://oc-p11-fruits-david-scanu/data/raw/Training/Apple Braeburn/0_100.jpg`
-- **Features** : `s3://oc-p11-fruits-david-scanu/process_fruits_data/outputs/output-full/features/`
-- **PCA** : `s3://oc-p11-fruits-david-scanu/process_fruits_data/outputs/output-full/pca/`
-
-### Architecture GDPR-compliant
-
-- Région `eu-west-1` 
 
 ---
 
