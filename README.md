@@ -33,12 +33,11 @@ Ce projet implémente un **pipeline PySpark distribué dans le cloud** sur **AWS
 
 | Livrable | Localisation | Description |
 |----------|--------------|-------------|
+| **Présentation** | [Google Slides](https://docs.google.com/presentation/d/1YH2OK8qeV0dBRjcsCU09T9dZZ977ExN2fQvkeF7-Iv0/edit?usp=sharing) | Support de présentation du projet |
 | **Notebook local corrigé et fonctionnel** | [p11-david-scanu-local-development.ipynb](notebooks/p11-david-scanu-local-development.ipynb) | Développement local du pipeline PySpark avec broadcast TensorFlow et PCA |
 | **Script PySpark** | [process_fruits_data.py](traitement/etape_2/scripts/process_fruits_data.py) | Pipeline PySpark production-ready (MobileNetV2 + PCA) |
-| **Bootstrap EMR** | [install_dependencies.sh](traitement/etape_2/scripts/install_dependencies.sh) | Installation TensorFlow, scikit-learn |
-| **Scripts automatisation** | [traitement/etape_2/scripts/](traitement/etape_2/scripts/) | 11 scripts bash (create, monitor, submit, etc.) |
-| **Configuration** | [config.sh](traitement/etape_2/config/config.sh) | Config centralisée (EMR, Spark, S3) |
-| **Présentation** | [Google Slides](https://docs.google.com/presentation/d/1YH2OK8qeV0dBRjcsCU09T9dZZ977ExN2fQvkeF7-Iv0/edit?usp=sharing) | Support de présentation du projet |
+| **Exemple image dataset** | [s3://oc-p11-fruits-david-scanu/data/raw/Training/Apple Braeburn/0_100.jpg](https://oc-p11-fruits-david-scanu.s3.eu-west-1.amazonaws.com/data/raw/Training/Apple%20Braeburn/0_100.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAWW47UUWGWU2R3FVC%2F20251128%2Feu-west-1%2Fs3%2Faws4_request&X-Amz-Date=20251128T171554Z&X-Amz-Expires=259200&X-Amz-SignedHeaders=host&X-Amz-Signature=022e3670a8194098f5f2561febe6af2cceb98d20adb8b718917ef020f1bd7b69) | Échantillon du dataset Fruits-360 (67K+ images sur S3) |
+| **Échantillon Résultats PCA** | [pca_sample_results.csv](traitement/etape_2/outputs/output-full/pca_sample_results.csv) | Chemins S3, Labels, Arrays PCA (320 images) |
 
 ### 📦 Stockage S3
 
@@ -81,7 +80,7 @@ s3://oc-p11-fruits-david-scanu/
 
 ### Architecture GDPR-compliant
 
-- Région `eu-west-1` 
+- Région `eu-west-1`
 
 ---
 
