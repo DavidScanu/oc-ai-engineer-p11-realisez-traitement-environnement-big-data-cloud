@@ -399,59 +399,63 @@ cd traitement/etape_2
 
 ---
 
+
 ## 💰 Coûts AWS (réels)
 
-| Phase | Durée | Coût |
-|-------|-------|------|
-| **Étape 1** (validation) | ~5 min | ~0.05€ |
-| **Étape 2 (MINI)** | ~30 min | ~0.50€ |
-| **Étape 2 (APPLES)** | ~30 min | ~0.40€ |
-| **Étape 2 (FULL)** | ~1h40 | ~1.60€ ✅ |
-| **TOTAL projet** | - | **< 3€** ✅ |
+### Coûts totaux du projet (24 octobre - 30 novembre 2025)
+
+**Total : $17.39 (~16.00€)**
+
+| Service | Coût | % |
+|---------|------|---|
+| **Compute (EMR + EC2)** | $12.31 (~11.33€) | 70.8% |
+| - EC2 Instances | $9.90 (~9.11€) | 56.9% |
+| - Elastic MapReduce | $2.41 (~2.22€) | 13.9% |
+| **Storage (S3)** | $1.63 (~1.50€) | 9.4% |
+| **Networking (VPC)** | $0.20 (~0.18€) | 1.1% |
+| **Other (EC2-Other)** | $0.28 (~0.25€) | 1.6% |
+| **Tax** | $2.88 (~2.65€) | 16.6% |
+| **Monitoring** | $0.09 (~0.08€) | 0.5% |
+
+### Répartition par phase du projet
+
+| Phase | Durée | Coût estimé |
+|-------|-------|-------------|
+| **Étape 1** (validation) | ~5 min | ~$0.06 (~0.05€) |
+| **Étape 2 (MINI)** | ~30 min | ~$0.54 (~0.50€) |
+| **Étape 2 (APPLES)** | ~30 min | ~$0.43 (~0.40€) |
+| **Étape 2 (FULL)** | ~1h40 | ~$1.74 (~1.60€) |
+| **Développement & tests** | - | ~$14.65 (~13.50€) |
+| **TOTAL projet** | - | **$17.39 (~16.00€)** |
 
 **Auto-terminaison** : 4h idle timeout (sécurité anti-coûts)
 
-### Script d'audit des coûts AWS 
+> 💡 **Insight** : Les coûts de production (mode FULL) ne représentent que ~10% des coûts totaux. La majorité des dépenses provient du développement et des tests, ce qui démontre l'efficacité de l'approche itérative et de l'optimisation du pipeline final.
 
-Un script d'audit rapide est disponible pour lister les ressources AWS susceptibles d'engendrer des coûts (instances EC2 actives, volumes EBS, Elastic IP, buckets S3, NAT Gateway, RDS, EMR, etc.). Le script est non-destructif : il se contente de lister et résumer les ressources.
+### Script d'analyse des coûts AWS
 
-Fichier : `scripts/aws_audit.sh`
+Un script Python d'analyse des coûts est disponible pour analyser les exports CSV du Cost Explorer AWS.
 
-- Actions effectuées : vérifications EC2 (par région), EBS, snapshots, AMIs privées, Elastic IPs, ELB, NAT Gateways, RDS, EKS, EFS, EMR, S3 buckets (taille via aws s3 ls --recursive --summarize), option Cost Explorer (--costs).
-- Options : `--region`, `--all-regions`, -`-costs`, `--quiet`.
+**Fichier** : [aws/analyze_costs.py](aws/analyze_costs.py)
 
-Usage rapide :
-
-```bash
-# rendre exécutable (une seule fois)
-chmod +x scripts/aws_audit.sh
-
-# scan rapide pour la région eu-west-1
-./scripts/aws_audit.sh --region eu-west-1
-
-# scan toutes les régions (long)
-./scripts/aws_audit.sh --all-regions
-
-# inclure Cost Explorer (requiert permissions & activation)
-./scripts/aws_audit.sh --region eu-west-1 --costs
-```
-
-Remarques :
-- Le calcul de la taille des buckets S3 via `aws s3 ls --recursive --summarize` peut être lent pour les gros buckets (par ex. `mlflow-artefact-store`).
-- L'option `--costs` utilise l'API Cost Explorer (région `us-east-1`) et nécessite que le service soit activé et que l'utilisateur ait la permission `ce:GetCostAndUsage`.
-- Le script n'effectue aucune suppression ; les actions de nettoyage restent manuelles.
-
-### Obtenir coûts par service sur 30 jours (Cost Explorer) :
+**Usage** :
 
 ```bash
-aws ce get-cost-and-usage \
-  --time-period Start=$(date -d '30 days ago' +%Y-%m-%d),End=$(date +%Y-%m-%d) \
-  --granularity MONTHLY --metrics UnblendedCost \
-  --group-by Type=DIMENSION,Key=SERVICE \
-  --region us-east-1 \
-  --query "ResultsByTime[0].Groups[].{Service: Keys[0],Amount: Metrics.UnblendedCost.Amount}" \
-  --output table
+# Analyser le fichier CSV le plus récent dans aws/
+python3 aws/analyze_costs.py
+
+# Ou spécifier un fichier CSV
+python3 aws/analyze_costs.py aws/2025-12-01-aws-costs-report-from-2025-10-24-to-2025-11-30.csv
 ```
+
+**Fonctionnalités** :
+- Analyse détaillée des coûts par service AWS
+- Répartition quotidienne des dépenses
+- Calcul automatique des pourcentages
+- Conversion USD → EUR approximative
+- Insights sur les postes de coûts principaux
+
+**Export Cost Explorer** : Pour obtenir un nouveau rapport CSV, utilisez la console AWS Cost Explorer ou l'API.
 
 ---
 
@@ -483,10 +487,10 @@ aws ce get-cost-and-usage \
 
 ## 📅 Dates
 
-- **Début** : 24 Octobre 2024
-- **Étape 1 validée** : 13 Novembre 2024
-- **Étape 2 validée** : 21 Novembre 2024
-- **Mode FULL validé** : 25 Novembre 2024 ✅
+- **Début** : 24 Octobre 2025
+- **Étape 1 validée** : 13 Novembre 2025
+- **Mode FULL validé** : 25 Novembre 2025
+- **Soutenance validée** : 30 novembre 2025
 
 ---
 
