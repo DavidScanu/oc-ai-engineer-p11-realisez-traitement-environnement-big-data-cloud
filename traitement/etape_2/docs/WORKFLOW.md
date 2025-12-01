@@ -101,8 +101,8 @@ vim config/config.sh
 ✅ process_fruits_data.py uploadé
 
 📋 Vérification des fichiers sur S3:
-2024-01-15 10:30:00    5.2 KiB install_dependencies.sh
-2024-01-15 10:30:01   25.8 KiB process_fruits_data.py
+2025-01-15 10:30:00    5.2 KiB install_dependencies.sh
+2025-01-15 10:30:01   25.8 KiB process_fruits_data.py
 ```
 
 **Vérification manuelle:**
@@ -370,12 +370,12 @@ aws emr describe-step \
 ✅ Résultats trouvés sur S3
 
 📂 Contenu disponible:
-2024-01-15 10:45:00  features/parquet/features_20240115_104500/
-2024-01-15 10:45:01  features/csv/features_20240115_104500/
-2024-01-15 10:45:02  pca/parquet/pca_20240115_104500/
-2024-01-15 10:45:03  pca/csv/pca_20240115_104500/
-2024-01-15 10:45:04  metadata/metadata_20240115_104500/
-2024-01-15 10:45:05  model_info/model_info_20240115_104500/
+2025-01-15 10:45:00  features/parquet/features_20250115_104500/
+2025-01-15 10:45:01  features/csv/features_20250115_104500/
+2025-01-15 10:45:02  pca/parquet/pca_20250115_104500/
+2025-01-15 10:45:03  pca/csv/pca_20250115_104500/
+2025-01-15 10:45:04  metadata/metadata_20250115_104500/
+2025-01-15 10:45:05  model_info/model_info_20250115_104500/
 
 📥 Téléchargement en cours...
 
@@ -386,12 +386,12 @@ aws emr describe-step \
 
 📁 Structure du dossier output/:
 Features (1280D):
-  output/features/parquet/features_20240115_104500/
-  output/features/csv/features_20240115_104500/
+  output/features/parquet/features_20250115_104500/
+  output/features/csv/features_20250115_104500/
 
 PCA (50D):
-  output/pca/parquet/pca_20240115_104500/
-  output/pca/csv/pca_20240115_104500/
+  output/pca/parquet/pca_20250115_104500/
+  output/pca/csv/pca_20250115_104500/
 
 💡 Emplacements importants:
    🎨 Features (1280D): output/features/
@@ -403,7 +403,7 @@ PCA (50D):
 🤖 Informations du modèle PCA:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
-  "timestamp": "20240115_104500",
+  "timestamp": "20250115_104500",
   "pca_components": 50,
   "original_dimensions": 1280,
   "reduced_dimensions": 50,

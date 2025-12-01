@@ -255,11 +255,11 @@ aws s3 ls s3://bucket/output/etape_1/ --recursive --region eu-west-1
 
 **Résultats attendus** :
 ```
-metadata_20241118_083045/
+metadata_202(1118_083045/
 ├── _SUCCESS
 └── part-00000-xxx.csv
 
-stats_20241118_083045/
+stats_20251118_083045/
 ├── _SUCCESS
 └── part-00000-xxx.csv
 ```
@@ -276,7 +276,7 @@ aws s3 cp s3://bucket/output/etape_1/ ./results/ --recursive --region eu-west-1
 **metadata CSV** :
 ```csv
 s3_path,label,filename,split,modification_time,file_size_bytes
-s3://.../Training/Apple_Braeburn/image_001_100.jpg,Apple_Braeburn,image_001_100.jpg,Training,2024-01-15 10:23:45,5432
+s3://.../Training/Apple_Braeburn/image_001_100.jpg,Apple_Braeburn,image_001_100.jpg,Training,2025-01-15 10:23:45,5432
 ...
 ```
 

@@ -254,9 +254,9 @@ Ce script interactif propose de supprimer :
 +------------------------------------------------+---------------+--------------------+--------+-------------------+----------------+
 |s3_path                                         |label          |filename            |split   |modification_time  |file_size_bytes |
 +------------------------------------------------+---------------+--------------------+--------+-------------------+----------------+
-|s3://.../Training/Apple_Braeburn/image_001_100.jpg|Apple_Braeburn|image_001_100.jpg   |Training|2024-01-15 10:23:45|5432            |
-|s3://.../Training/Apple_Braeburn/image_002_100.jpg|Apple_Braeburn|image_002_100.jpg   |Training|2024-01-15 10:23:45|5621            |
-|s3://.../Test/Banana/r_image_042_100.jpg        |Banana         |r_image_042_100.jpg |Test    |2024-01-15 10:24:12|4892            |
+|s3://.../Training/Apple_Braeburn/image_001_100.jpg|Apple_Braeburn|image_001_100.jpg   |Training|2025-01-15 10:23:45|5432            |
+|s3://.../Training/Apple_Braeburn/image_002_100.jpg|Apple_Braeburn|image_002_100.jpg   |Training|2025-01-15 10:23:45|5621            |
+|s3://.../Test/Banana/r_image_042_100.jpg        |Banana         |r_image_042_100.jpg |Test    |2025-01-15 10:24:12|4892            |
 +------------------------------------------------+---------------+--------------------+--------+-------------------+----------------+
 ```
 

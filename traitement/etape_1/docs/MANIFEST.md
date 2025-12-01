@@ -185,5 +185,5 @@ Fichiers à ajouter pour les prochaines étapes :
 ---
 
 **Version** : 1.0
-**Date** : 2024-11-18
+**Date** : 2025-11-18
 **Auteur** : Projet P11 - OpenClassrooms AI Engineer

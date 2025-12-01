@@ -1,6 +1,6 @@
 # ✅ Checklist Soutenance - Projet P11 Big Data Cloud
 
-**Date de validation complète** : 25 novembre 2024
+**Date de validation complète** : 25 novembre 2025
 **Étudiant** : David Scanu
 **Projet** : Réalisez un traitement dans un environnement Big Data sur le Cloud
 
@@ -358,6 +358,6 @@ aws s3 ls s3://oc-p11-fruits-david-scanu/process_fruits_data/outputs/ --recursiv
 
 ---
 
-**Date de génération** : 25 novembre 2024
+**Date de génération** : 25 novembre 2025
 **Statut** : ✅ **Prêt pour la soutenance**
 **Accomplissement** : 🎉 **Pipeline Big Data Cloud production-ready validé**

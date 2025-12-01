@@ -664,7 +664,7 @@ s3://.../0_100.jpg,Apple Braeburn,"1.234,5.678,9.012,..."
 
 ```json
 {
-  "timestamp": "20240115_104500",
+  "timestamp": "20250115_104500",
   "pca_components": 50,
   "original_dimensions": 1280,
   "reduced_dimensions": 50,

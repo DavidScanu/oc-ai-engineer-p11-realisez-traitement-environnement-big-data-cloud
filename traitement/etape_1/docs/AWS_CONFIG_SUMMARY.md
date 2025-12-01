@@ -1,6 +1,6 @@
 # Résumé de la configuration AWS - Projet P11
 
-**Date de génération** : 2024-11-18
+**Date de génération** : 2025-11-18
 **Compte AWS** : 461506913677
 **Région** : eu-west-1 (Europe - Irlande)
 
@@ -196,4 +196,4 @@ En cas de problème, vérifier dans l'ordre :
 
 ---
 
-**Dernière mise à jour** : 2024-11-18
+**Dernière mise à jour** : 2025-11-18

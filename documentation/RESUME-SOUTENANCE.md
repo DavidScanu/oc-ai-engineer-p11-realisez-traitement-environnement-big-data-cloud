@@ -1,6 +1,6 @@
 # 🎓 Résumé de Soutenance - P11 Big Data Cloud
 
-**Étudiant** : David Scanu | **Date** : 25 novembre 2024 | **Statut** : ✅ Prêt
+**Étudiant** : David Scanu | **Date** : 25 novembre 2025 | **Statut** : ✅ Prêt
 
 ---
 
@@ -386,7 +386,7 @@ Livrables     : Complets           ✅
 
 ---
 
-**Date** : 25 novembre 2024
+**Date** : 25 novembre 2025
 **Statut** : ✅ **PRÊT POUR LA SOUTENANCE**
 **Confiance** : 🎯 **100%**
 

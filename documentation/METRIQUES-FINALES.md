@@ -1,6 +1,6 @@
 # 📊 Métriques Finales - P11 Big Data Cloud
 
-**Date de finalisation** : 25 novembre 2024
+**Date de finalisation** : 25 novembre 2025
 **Projet** : Traitement Big Data sur AWS EMR
 **Étudiant** : David Scanu
 
@@ -390,7 +390,7 @@ TOTAL Données         3.4 GB       72,792    ✅
 
 ---
 
-**Date de génération** : 25 novembre 2024
+**Date de génération** : 25 novembre 2025
 **Statut du projet** : ✅ **TERMINÉ ET VALIDÉ**
 **Prêt pour soutenance** : ✅ **OUI**
 **Confiance** : 🎯 **100%**

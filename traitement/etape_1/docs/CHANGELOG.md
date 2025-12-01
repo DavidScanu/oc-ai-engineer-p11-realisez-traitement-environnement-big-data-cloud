@@ -1,6 +1,6 @@
 # Changelog - Configuration AWS P11 Étape 1
 
-## 2024-11-18 - Adaptation à l'environnement AWS de l'utilisateur
+## 2025-11-18 - Adaptation à l'environnement AWS de l'utilisateur
 
 ### 🔧 Modifications de configuration
 
@@ -208,5 +208,5 @@ aws iam list-roles --query 'Roles[?contains(RoleName, `EMR`)].RoleName'
 ---
 
 **Version** : 1.1
-**Date** : 2024-11-18
+**Date** : 18 novembre 2025
 **Responsable** : Configuration automatisée via scripts

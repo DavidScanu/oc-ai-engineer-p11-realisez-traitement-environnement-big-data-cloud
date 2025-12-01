@@ -48,11 +48,11 @@ s3://oc-p11-fruits-david-scanu/read_fruits_data/scripts/read_fruits_data.py
 ```
 output/
 └── etape_1/
-    ├── metadata_20241118_083045/
+    ├── metadata_20251118_083045/
     │   ├── _SUCCESS
     │   └── part-00000-xxx.csv
     │
-    └── stats_20241118_083045/
+    └── stats_20251118_083045/
         ├── _SUCCESS
         └── part-00000-xxx.csv
 ```
@@ -184,8 +184,8 @@ s3://oc-p11-fruits-david-scanu/read_fruits_data/
 s3://oc-p11-fruits-david-scanu/read_fruits_data/
 └── output/
     └── etape_1/
-        ├── metadata_20241118_083045/  ✅ Créé par PySpark
-        └── stats_20241118_083045/     ✅ Créé par PySpark
+        ├── metadata_20251118_083045/  ✅ Créé par PySpark
+        └── stats_20251118_083045/     ✅ Créé par PySpark
 ```
 
 ---
